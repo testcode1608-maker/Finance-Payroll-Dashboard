@@ -192,7 +192,6 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
      </svg>
      <div className="lamp-floor-glow" aria-hidden="true"/>
     </div>
-    <button className="lamp-hint" type="button" onClick={toggleLamp}><span className={"lamp-hint-icon "+(lampOn?"lit":"")}>{lampOn?"✦":"↕"}</span>{lampOn?"Éteindre la lampe":"Tirer le cordon pour allumer"}<span className="lamp-hint-arrow">↗</span></button>
     <div className="lamp-scene-footer"><span><ShieldCheck size={14}/> ACCÈS PRIVÉ</span><span><span className="lamp-footer-dot"/> SERVEUR LOCAL</span></div>
    </section>
    <section className={"lamp-login-card "+(lampOn?"revealed":"")} aria-hidden={!lampOn}>
