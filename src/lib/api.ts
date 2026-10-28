@@ -19,7 +19,7 @@ type ApiResponse<T> = {data:T}
 
 async function request<T>(path:string, init?:RequestInit):Promise<T> {
   let response:Response
-  try { response=await fetch(`${API_BASE}${path}`,{...init,headers:{'Content-Type':'application/json',...init?.headers}}) }
+  try { const token=localStorage.getItem('finance_admin_token'); response=await fetch(`${API_BASE}${path}`,{...init,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{}),...init?.headers}}) }
   catch { throw new Error('Impossible de joindre l’API. Vérifiez que le serveur fonctionne sur http://localhost:3001.') }
   const payload=await response.json().catch(()=>({}))
   if(!response.ok){const details=Array.isArray(payload?.details)?payload.details.map((x:{message?:string})=>x.message).filter(Boolean).join(', '):'';throw new Error(details||payload?.error||`Erreur API (${response.status})`)}
@@ -51,3 +51,13 @@ export async function getDues(){return (await request<ApiResponse<Due[]>>('/api/
 export async function createDue(input:{title:string;amount:number;dueDate:string;employeeId?:number|null;status:'upcoming'|'paid'|'overdue';notes?:string|null}){return (await request<ApiResponse<Due>>('/api/dues',json('POST',input))).data}
 export async function updateDueStatus(id:number,status:Due['status']){return (await request<ApiResponse<{id:number;status:Due['status']}>>(`/api/dues/${id}/status`,json('PATCH',{status}))).data}
 export async function deleteDue(id:number){await request<void>(`/api/dues/${id}`,{method:'DELETE'})}
+
+
+export async function loginAdmin(username:string,password:string):Promise<{token:string;username:string;expiresAt:string}> {
+  const result=await request<{data:{token:string;username:string;expiresAt:string}}>('/api/auth/login',json('POST',{username,password}))
+  return result.data
+}
+export async function logoutAdmin():Promise<void> {
+  const token=localStorage.getItem('finance_admin_token')
+  if(token) await request<void>('/api/auth/logout',{method:'POST'})
+}
