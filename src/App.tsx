@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
-  createDepartment, createEmployee, getDepartments, getEmployees, getPayrollSummary,
+  createDepartment, createEmployee, createTransaction, getDepartments, getEmployees, getPayrollSummary,
   getTransactions, type Department, type Employee, type PayrollSummary, type Transaction,
 } from './lib/api'
 
@@ -43,6 +43,7 @@ function App() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [departmentForm, setDepartmentForm] = useState({ name: '', description: '', monthlyBudget: '' })
+  const [transactionForm, setTransactionForm] = useState({ merchant: '', category: '', amount: '', transactionDate: new Date().toISOString().slice(0, 10), departmentId: '', employeeId: '', description: '', status: 'needs_receipt' as Transaction['status'] })
   const [employeeForm, setEmployeeForm] = useState({
     employeeCode: '', firstName: '', lastName: '', email: '', phone: '',
     departmentId: '', position: '', hireDate: '', baseSalary: '', employmentStatus: 'active' as Employee['employmentStatus'],
@@ -151,7 +152,32 @@ function App() {
     } finally { setSaving(false) }
   }
 
-  const canCreate = active === 'Departments' || active === 'Team members'
+  const submitTransaction = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    setNotice('')
+    try {
+      await createTransaction({
+        merchant: transactionForm.merchant.trim(),
+        category: transactionForm.category.trim(),
+        amount: Number(transactionForm.amount),
+        transactionDate: transactionForm.transactionDate || undefined,
+        departmentId: transactionForm.departmentId ? Number(transactionForm.departmentId) : null,
+        employeeId: transactionForm.employeeId ? Number(transactionForm.employeeId) : null,
+        description: transactionForm.description.trim() || null,
+        status: transactionForm.status,
+      })
+      setTransactionForm({ merchant: '', category: '', amount: '', transactionDate: new Date().toISOString().slice(0, 10), departmentId: '', employeeId: '', description: '', status: 'needs_receipt' })
+      setShowForm(false)
+      setNotice('Transaction enregistrée dans PostgreSQL.')
+      await loadData(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Échec de la création de la transaction.')
+    } finally { setSaving(false) }
+  }
+
+  const canCreate = active === 'Departments' || active === 'Team members' || active === 'Transactions'
   const heading = active === 'Team members' ? 'Employés' : active
   const subtitle: Record<string, string> = {
     Overview: 'Vue d’ensemble calculée à partir des données enregistrées dans PostgreSQL.',
@@ -216,7 +242,7 @@ function App() {
             <div><div className="eyebrow"><span className="status-dot" /> DONNÉES EN DIRECT</div><h1>{heading}</h1><p>{subtitle[active] || 'Gestion de votre espace Finance & Payroll.'}</p></div>
             <div className="heading-actions">
               <button className="secondary-button" onClick={() => void loadData(true)}><RefreshCw size={14} /> {refreshing ? 'Actualisation…' : 'Actualiser'}</button>
-              {canCreate && <button className="primary-button" onClick={() => setShowForm(!showForm)}><Plus size={16} /> {active === 'Departments' ? 'Nouveau département' : 'Nouvel employé'}</button>}
+              {canCreate && <button className="primary-button" onClick={() => setShowForm(!showForm)}><Plus size={16} /> {active === 'Departments' ? 'Nouveau département' : active === 'Transactions' ? 'Nouvelle transaction' : 'Nouvel employé'}</button>}
             </div>
           </div>
 
@@ -226,6 +252,21 @@ function App() {
           {showForm && active === 'Departments' && <form className="panel data-form" onSubmit={submitDepartment}>
             <h2>Ajouter un département</h2>
             <div className="form-grid"><label>Nom du département *<input required maxLength={120} value={departmentForm.name} onChange={e => setDepartmentForm({ ...departmentForm, name: e.target.value })} placeholder="Ex. Informatique" /></label><label>Budget mensuel (DA)<input type="number" min="0" step="0.01" value={departmentForm.monthlyBudget} onChange={e => setDepartmentForm({ ...departmentForm, monthlyBudget: e.target.value })} placeholder="0" /></label><label className="form-wide">Description<input value={departmentForm.description} onChange={e => setDepartmentForm({ ...departmentForm, description: e.target.value })} placeholder="Description (facultatif)" /></label></div>
+            <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setShowForm(false)}>Annuler</button><button disabled={saving} className="primary-button" type="submit">{saving ? 'Enregistrement…' : 'Enregistrer dans PostgreSQL'}</button></div>
+          </form>}
+
+          {showForm && active === 'Transactions' && <form className="panel data-form" onSubmit={submitTransaction}>
+            <h2>Ajouter une transaction</h2>
+            <div className="form-grid">
+              <label>Marchand / bénéficiaire *<input required maxLength={180} value={transactionForm.merchant} onChange={e => setTransactionForm({ ...transactionForm, merchant: e.target.value })} placeholder="Ex. Fournisseur" /></label>
+              <label>Catégorie *<input required maxLength={100} value={transactionForm.category} onChange={e => setTransactionForm({ ...transactionForm, category: e.target.value })} placeholder="Ex. Fournitures" /></label>
+              <label>Montant (DA) *<input required type="number" min="0" step="0.01" value={transactionForm.amount} onChange={e => setTransactionForm({ ...transactionForm, amount: e.target.value })} /></label>
+              <label>Date *<input required type="date" value={transactionForm.transactionDate} onChange={e => setTransactionForm({ ...transactionForm, transactionDate: e.target.value })} /></label>
+              <label>Département<select value={transactionForm.departmentId} onChange={e => setTransactionForm({ ...transactionForm, departmentId: e.target.value })}><option value="">Aucun</option>{departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
+              <label>Employé<select value={transactionForm.employeeId} onChange={e => setTransactionForm({ ...transactionForm, employeeId: e.target.value })}><option value="">Aucun</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{fullName(employee)}</option>)}</select></label>
+              <label>Statut<select value={transactionForm.status} onChange={e => setTransactionForm({ ...transactionForm, status: e.target.value as Transaction['status'] })}><option value="needs_receipt">Justificatif requis</option><option value="pending">En attente</option><option value="complete">Terminé</option></select></label>
+              <label>Description<input value={transactionForm.description} onChange={e => setTransactionForm({ ...transactionForm, description: e.target.value })} placeholder="Facultatif" /></label>
+            </div>
             <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setShowForm(false)}>Annuler</button><button disabled={saving} className="primary-button" type="submit">{saving ? 'Enregistrement…' : 'Enregistrer dans PostgreSQL'}</button></div>
           </form>}
 
