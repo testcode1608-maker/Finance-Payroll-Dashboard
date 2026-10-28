@@ -8,7 +8,7 @@ Responsive React + TypeScript + Vite frontend with a separate Node.js/Express AP
 - `server/src/config/` — environment validation and PostgreSQL connection pool.
 - `server/src/routes/` — API routes for health, departments, employees, payroll and transactions.
 - `server/src/middleware/` — centralized API error handling.
-- `database/migrations/` — versioned SQL schema migrations.
+- `database/migrations/` — versioned SQL schema migrations, including the 100 synthetic employee seed.
 - `server/.env.example` — local API configuration template.
 
 ## Requirements
@@ -27,13 +27,13 @@ If the database has not been created yet, create it once as the PostgreSQL admin
 CREATE DATABASE "hani-model-1" WITH OWNER = postgres ENCODING = 'UTF8';
 ```
 
-Apply the initial schema from the repository root in PowerShell. Enter your PostgreSQL password only when prompted:
+Apply the initial schema and then the employee profile/seed migration from the repository root in PowerShell. Enter your PostgreSQL password only when prompted:
 
 ```powershell
 & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -p 5432 -U postgres -d "hani-model-1" -W -v ON_ERROR_STOP=1 -f "database/migrations/001_initial_schema.sql"
 ```
 
-This migration creates the application's departments, employees, payroll periods and items, transactions, company cards, budgets, and dues tables. It does not connect to or alter the other databases on your machine.
+These commands create the application's tables, add employee address/contract/schedule/notes fields, and insert 100 clearly synthetic sample employee profiles (non-routable example.test emails). Re-running the second migration will not duplicate those sample employee codes. It does not connect to or alter the other databases on your machine.
 
 ## 2. Configure and start the API
 
@@ -60,10 +60,16 @@ Available initial endpoints:
 
 - `GET /api/health`
 - `GET /api/departments` and `POST /api/departments`
-- `GET /api/employees` and `POST /api/employees`
+- `GET /api/employees?q=...`, `POST /api/employees`, `PUT /api/employees/:id`, and `DELETE /api/employees/:id`
 - `GET /api/payroll/summary`
 - `GET /api/payroll/periods` and `POST /api/payroll/periods`
-- `GET /api/transactions`
+- `GET /api/transactions` and `POST /api/transactions`
+- `GET/POST /api/cards`, `GET/POST /api/budgets`, and `GET/POST /api/dues`
+- `GET/POST /api/payroll/periods`, `POST /api/payroll/periods/:id/generate`, and payroll item endpoints
+
+## Employee seed data
+
+The 100 sample employees are fictional training records, not real people's personal data. Their emails use the reserved `.test` domain and the records should be replaced with authorized company data before production use. Payroll generation currently calculates net pay as base salary + bonuses − entered deductions; it does not assume a statutory tax/social-security formula.
 
 ## 3. Start the frontend
 
