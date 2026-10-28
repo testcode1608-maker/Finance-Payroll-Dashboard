@@ -217,3 +217,16 @@
  .lamp-layout{align-items:start}
  .lamp-login-card{margin-top:0}
 }
+
+
+/* Force the revealed login card to align with the lamp scene's top edge */
+.lamp-layout{align-items:start!important}
+.lamp-scene{grid-column:1;grid-row:1;align-self:start;padding-top:0}
+.lamp-login-card{grid-column:2;grid-row:1;align-self:start;justify-self:center;margin-block-start:0}
+.lamp-login-card.revealed{transform:translateY(0) scale(1)}
+.lamp-hint{display:none!important}
+@media(max-width:850px){
+ .lamp-layout{grid-template-columns:minmax(0,1fr);align-items:start!important}
+ .lamp-scene{grid-column:1;grid-row:auto}
+ .lamp-login-card{grid-column:1;grid-row:auto;align-self:start;justify-self:stretch;margin-block-start:0}
+}
