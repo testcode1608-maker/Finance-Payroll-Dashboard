@@ -251,3 +251,46 @@
 @media(max-width:850px){.lamp-brand-row{align-items:flex-start}.lamp-color-controls{gap:7px;padding:7px}.lamp-color-dot{width:11px;height:11px}.lamp-dust{opacity:.2}}
 @media(max-width:420px){.lamp-brand-row{gap:8px}.lamp-brand{font-size:14px}.lamp-color-controls{gap:6px;padding:6px}.lamp-color-dot{width:10px;height:10px}}
 @media(prefers-reduced-motion:reduce){.lamp-dust{animation:none}}
+
+
+/* Minimal Coding Stella-style lamp login: remove dashboard branding and promotional headings */
+.lamp-layout{width:min(100% - 40px,980px)!important;max-width:980px!important;grid-template-columns:minmax(280px,1fr) minmax(300px,340px)!important;gap:clamp(28px,6vw,84px)!important;align-items:center!important;margin-inline:auto!important}
+.lamp-scene{position:relative;min-height:440px!important;padding:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lamp-color-controls{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:5;gap:12px;padding:10px 14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:999px}
+.lamp-color-dot{width:14px;height:14px}
+.lamp-art{position:absolute!important;top:42px!important;left:50%!important;right:auto!important;width:300px!important;height:390px!important;transform:translateX(-50%)!important;opacity:1!important}
+.lamp-svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 18px 28px #0005)}
+.lamp-beam{top:100px;left:50%;transform:translateX(-50%);width:245px;height:275px;clip-path:polygon(27% 0,73% 0,100% 100%,0 100%);filter:blur(1px)}
+.lamp-floor-glow{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:230px;height:34px;border-radius:50%;filter:blur(18px);opacity:.18}
+.lamp-login-card{width:100%!important;max-width:340px!important;min-width:0!important;padding:2.5rem!important;border-radius:30px!important;background:rgba(255,255,255,.05)!important;backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,.1)!important;box-shadow:0 20px 40px rgba(0,0,0,.3)!important;align-self:center!important;justify-self:center!important;margin:0!important}
+.lamp-login-card.revealed{transform:translateY(0) scale(1)!important}
+.lamp-card-heading{margin-top:0!important;text-align:center}
+.lamp-card-heading h2{font-size:1.5rem!important;font-weight:500!important;color:#fff!important;margin:0 0 1.5rem!important;letter-spacing:0!important}
+.lamp-card-heading p{display:none!important}
+.lamp-login-form{margin-top:0!important}
+.lamp-login-form>label{display:block;margin-bottom:1.2rem!important;color:#999!important;font-size:.85rem!important}
+.lamp-input-wrap{display:flex;align-items:center;gap:10px;width:100%;margin-top:.5rem;padding:0 14px;border:1px solid transparent;border-radius:15px;background:rgba(255,255,255,.07);transition:border-color .25s,background .25s}
+.lamp-input-wrap:focus-within{border-color:var(--lamp-accent)!important;background:rgba(255,255,255,.12)!important}
+.lamp-input-wrap>svg{flex:none;color:#a4a8a4}
+.lamp-input-wrap input{min-width:0;width:100%;padding:14px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-size:1rem!important;color:#fff!important}
+.lamp-input-wrap input::placeholder{color:#777f7b}
+.lamp-login-submit{width:100%;min-height:50px;margin-top:10px!important;padding:15px!important;border:0!important;border-radius:15px!important;background:linear-gradient(135deg,#bf953f,#fcf6ba 35%,#b38728 65%,#fcf6ba 82%,#aa771c)!important;color:#171717!important;font-size:1rem!important;font-weight:600!important;box-shadow:none!important}
+.lamp-login-submit:hover{transform:scale(1.02)!important;filter:brightness(1.08)}
+.lamp-screen:not(.lamp-on) .lamp-login-card{display:block!important;opacity:0!important;pointer-events:none!important;transform:translateY(30px) scale(.96)!important}
+.lamp-screen.lamp-on .lamp-login-card{display:block!important;opacity:1!important;pointer-events:auto!important;transform:translateY(0) scale(1)!important}
+.lamp-screen:not(.lamp-on) .lamp-login-card input,.lamp-screen:not(.lamp-on) .lamp-login-card button{pointer-events:none}
+.lamp-screen .lamp-scene-footer,.lamp-screen .lamp-page-footer,.lamp-screen .lamp-brand,.lamp-screen .lamp-brand-row,.lamp-screen .lamp-headline,.lamp-screen .lamp-card-top,.lamp-screen .lamp-card-bottom,.lamp-screen .lamp-secure-note{display:none!important}
+@media(max-width:760px){
+ .lamp-layout{width:min(100% - 28px,440px)!important;grid-template-columns:minmax(0,1fr)!important;gap:18px!important}
+ .lamp-scene{min-height:310px!important;grid-column:1;grid-row:1}
+ .lamp-color-controls{top:0}
+ .lamp-art{top:20px!important;width:230px!important;height:300px!important}
+ .lamp-beam{top:75px;width:190px;height:210px}
+ .lamp-login-card{grid-column:1;grid-row:2;width:min(100%,340px)!important;padding:2rem 1.5rem!important}
+}
+@media(max-width:420px){
+ .lamp-layout{width:calc(100% - 24px)!important}
+ .lamp-scene{min-height:260px!important}
+ .lamp-art{top:20px!important;width:195px!important;height:255px!important}
+ .lamp-login-card{padding:1.6rem 1.25rem!important}
+}
