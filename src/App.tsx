@@ -1,8 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Activity, ArrowDownRight, ArrowLeftRight, ArrowUpRight, Bell, BriefcaseBusiness,
+  Activity, ArrowLeftRight, ArrowUpRight, Bell, BriefcaseBusiness,
   CalendarDays, Check, ChevronDown, CircleDollarSign, CreditCard, Database,
-  FileText, Filter, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
+  FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
   Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, X, Zap,
 } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
