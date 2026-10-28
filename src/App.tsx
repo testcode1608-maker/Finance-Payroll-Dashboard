@@ -83,7 +83,6 @@ function App(){
  const filteredTransactions=useMemo(()=>transactions.filter(t=>`${t.merchant} ${t.category} ${t.departmentName||''} ${t.employeeName||''}`.toLowerCase().includes(query.toLowerCase())),[transactions,query])
  const filteredDepartments=useMemo(()=>departments.filter(d=>`${d.name} ${d.description||''}`.toLowerCase().includes(query.toLowerCase())),[departments,query])
  const totalTransactions=transactions.reduce((s,t)=>s+Number(t.amount||0),0)
- const receiptCount=transactions.filter(t=>t.status==='needs_receipt').length
  const chartData=useMemo(()=>{const m=new Map<string,number>();transactions.forEach(t=>{const d=new Date(t.transactionDate);if(!Number.isNaN(d.getTime())){const k=new Intl.DateTimeFormat('fr-DZ',{day:'2-digit',month:'short'}).format(d);m.set(k,(m.get(k)||0)+Number(t.amount||0))}});return Array.from(m,([day,spend])=>({day,spend})).slice(0,7).reverse()},[transactions])
  const openSection=(label:string)=>{setActive(label);setShowForm(false);setNotice('');setMobileNav(false);setQuery('')}
  const startEdit=(e:Employee)=>{setEmployeeForm({employeeCode:e.employeeCode,firstName:e.firstName,lastName:e.lastName,email:e.email||'',phone:e.phone||'',departmentId:e.departmentId?String(e.departmentId):'',position:e.position,hireDate:e.hireDate?.slice(0,10)||'',baseSalary:String(e.baseSalary),employmentStatus:e.employmentStatus,address:e.address||'',contractType:e.contractType||'permanent',workSchedule:e.workSchedule||'full_time',notes:e.notes||''});setEditingEmployeeId(e.id);setShowForm(true);window.scrollTo({top:0,behavior:'smooth'})}
