@@ -31,7 +31,7 @@ Apply the initial schema and then the employee profile/seed migration from the r
 
 ```powershell
 & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -p 5432 -U postgres -d "hani-model-1" -W -v ON_ERROR_STOP=1 -f "database/migrations/001_initial_schema.sql"
-& "C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe" -h localhost -p 5432 -U postgres -d "hani-model-1" -W -v ON_ERROR_STOP=1 -f "database/migrations/002_employee_profiles_and_demo_seed.sql"
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -h localhost -p 5432 -U postgres -d "hani-model-1" -W -v ON_ERROR_STOP=1 -f "database/migrations/002_employee_profiles_and_demo_seed.sql"
 ```
 
 These commands create the application's tables, add employee address/contract/schedule/notes fields, and insert 100 clearly synthetic sample employee profiles (non-routable example.test emails). Re-running the second migration will not duplicate those sample employee codes. It does not connect to or alter the other databases on your machine.
