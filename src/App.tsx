@@ -162,5 +162,47 @@ export default App
 
 
 function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
- return <main className="login-screen"><div className="login-decoration login-decoration-one"/><div className="login-decoration login-decoration-two"/><section className="login-layout"><div className="login-intro"><div className="login-brand"><span className="login-brand-mark"><Wallet size={23}/></span><span>Money<span>.</span></span></div><div className="login-kicker"><span className="login-live-dot"/> ESPACE DE GESTION PRIVÉ</div><h1>Vos finances.<br/><span>En toute maîtrise.</span></h1><p>Une vue claire sur vos équipes, vos budgets et vos paiements. Connectez-vous pour accéder à votre espace administrateur.</p><div className="login-trust-row"><span><ShieldCheck size={16}/> Accès protégé</span><span><Database size={16}/> PostgreSQL</span></div><div className="login-orbit login-orbit-a"/><div className="login-orbit login-orbit-b"/><div className="login-stat-card"><span className="login-stat-icon"><Activity size={18}/></span><span><small>ESPACE ADMINISTRATEUR</small><strong>Finance & Payroll</strong></span><span className="login-stat-status">● Actif</span></div></div><div className="login-card"><div className="login-card-icon"><LockKeyhole size={23}/></div><div className="login-card-heading"><h2>Bon retour</h2><p>Connectez-vous à votre compte administrateur.</p></div><form onSubmit={onSubmit} className="login-form"><label>Nom d’utilisateur<span className="login-input-wrap"><Users size={17}/><input autoComplete="username" autoFocus required value={username} onChange={e=>setUsername(e.target.value)} placeholder="Votre nom d’utilisateur"/></span></label><label>Mot de passe<span className="login-input-wrap"><LockKeyhole size={17}/><input autoComplete="current-password" required type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Saisissez votre mot de passe"/><button type="button" className="login-reveal" aria-label={showPassword?'Masquer le mot de passe':'Afficher le mot de passe'} onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></span></label>{error&&<div className="login-error" role="alert">{error}</div>}<button className="login-submit" type="submit" disabled={busy}>{busy?<><LoaderCircle size={17} className="login-spinner"/> Vérification…</>:<>Accéder au tableau de bord <ArrowUpRight size={17}/></>}</button></form><div className="login-secure-note"><ShieldCheck size={15}/><span>Connexion vérifiée par le serveur. Vos données restent dans votre base locale.</span></div></div></section><footer className="login-footer">© {new Date().getFullYear()} Finance & Payroll <span>•</span> Espace administrateur sécurisé</footer></main>
+ const [lampOn,setLampOn]=useState(false)
+ const toggleLamp=()=>setLampOn(value=>!value)
+ return <main className={"lamp-screen "+(lampOn?"lamp-on":"lamp-off")}>
+  <div className="lamp-ambient" aria-hidden="true"/>
+  <div className="lamp-layout">
+   <section className="lamp-scene" aria-label="Interactive lamp">
+    <div className="lamp-brand"><span className="lamp-brand-mark"><Wallet size={20}/></span><span>Finance <b>&amp; Payroll</b></span></div>
+    <div className="lamp-headline"><span className="lamp-eyebrow"><span className="lamp-status-dot"/> ESPACE ADMINISTRATEUR SÉCURISÉ</span><h1>Allumez votre espace.<br/><span>Maîtrisez vos finances.</span></h1><p>Tirez sur le cordon du luminaire pour allumer la lumière et révéler votre espace de connexion.</p></div>
+    <div className="lamp-art">
+     <div className="lamp-beam" aria-hidden="true"/>
+     <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
+      <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?"#fff6d9":"#626a68"}/><stop offset=".55" stopColor={lampOn?"#e8d9ad":"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor="#ffd66e" stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor="#ffd66e" stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
+      <path d="M150 0 V92" stroke="url(#lampCord)" strokeWidth="4" strokeLinecap="round"/>
+      <ellipse cx="150" cy="143" rx="110" ry="76" fill="url(#lampBulb)" opacity={lampOn?1:0} className="lamp-bulb-glow"/>
+      <path d="M90 87 C91 48 209 48 210 87 L229 126 Q150 151 71 126 Z" fill="url(#lampShade)" stroke={lampOn?"#fff1c3":"#747c77"} strokeOpacity=".8" strokeWidth="1.5"/>
+      <ellipse cx="150" cy="126" rx="79" ry="12" fill={lampOn?"#fff4c6":"#171d1d"}/><ellipse cx="150" cy="126" rx="58" ry="7" fill={lampOn?"#fffbe7":"#0c1112"} opacity=".9"/>
+      <path d="M91 87 Q150 111 209 87" fill="none" stroke="#ffffff" strokeOpacity={lampOn?".55":".12"} strokeWidth="2"/>
+      <g className="lamp-pull-cord" onClick={toggleLamp} role="button" tabIndex={0} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleLamp()}}} aria-label="Tirer le cordon pour allumer ou éteindre la lampe">
+       <path d="M202 123 V190" stroke="#aaa38e" strokeWidth="2" strokeLinecap="round"/><path d="M201 123 V190" stroke="#f6e4b8" strokeOpacity=".45" strokeWidth=".7"/>
+       <circle cx="202" cy="190" r="8" fill="#bda77c" stroke="#f6e2b3" strokeWidth="1.5"/><circle cx="202" cy="190" r="3" fill="#514a39"/><circle cx="202" cy="190" r="25" fill="transparent"/>
+      </g>
+      <ellipse cx="150" cy="133" rx="48" ry="18" fill="url(#lampBulb)" opacity={lampOn?1:0}/>
+     </svg>
+     <div className="lamp-floor-glow" aria-hidden="true"/>
+    </div>
+    <button className="lamp-hint" type="button" onClick={toggleLamp}><span className={"lamp-hint-icon "+(lampOn?"lit":"")}>{lampOn?"✦":"↕"}</span>{lampOn?"Éteindre la lampe":"Tirer le cordon pour allumer"}<span className="lamp-hint-arrow">↗</span></button>
+    <div className="lamp-scene-footer"><span><ShieldCheck size={14}/> ACCÈS PRIVÉ</span><span><span className="lamp-footer-dot"/> SERVEUR LOCAL</span></div>
+   </section>
+   <section className={"lamp-login-card "+(lampOn?"revealed":"")} aria-hidden={!lampOn}>
+    <div className="lamp-card-top"><span className="lamp-lock-icon"><LockKeyhole size={21}/></span><span className="lamp-card-badge"><span/> SECURE SIGN IN</span></div>
+    <div className="lamp-card-heading"><h2>Bienvenue.</h2><p>Connectez-vous pour accéder à votre tableau de bord.</p></div>
+    <form onSubmit={onSubmit} className="lamp-login-form">
+     <label>Nom d’utilisateur<span className="lamp-input-wrap"><Users size={17}/><input autoComplete="username" required value={username} onChange={e=>setUsername(e.target.value)} placeholder="Votre nom d’utilisateur" tabIndex={lampOn?0:-1}/></span></label>
+     <label>Mot de passe<span className="lamp-input-wrap"><LockKeyhole size={17}/><input autoComplete="current-password" required type={showPassword?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Saisissez votre mot de passe" tabIndex={lampOn?0:-1}/><button type="button" className="lamp-reveal" tabIndex={lampOn?0:-1} aria-label={showPassword?"Masquer le mot de passe":"Afficher le mot de passe"} onClick={()=>setShowPassword(!showPassword)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></span></label>
+     {error&&<div className="lamp-login-error" role="alert">{error}</div>}
+     <button className="lamp-login-submit" type="submit" disabled={busy}>{busy?<><LoaderCircle size={17} className="login-spinner"/> Vérification…</>:<>Se connecter <ArrowUpRight size={17}/></>}</button>
+    </form>
+    <div className="lamp-secure-note"><ShieldCheck size={16}/><span>Authentification vérifiée par le serveur. Vos données financières restent protégées.</span></div>
+    <div className="lamp-card-bottom"><span>FINANCE &amp; PAYROLL</span><span>ADMIN PORTAL · 01</span></div>
+   </section>
+  </div>
+  <footer className="lamp-page-footer">© {new Date().getFullYear()} Finance &amp; Payroll <span>•</span> Espace administrateur sécurisé</footer>
+ </main>
 }
