@@ -55,3 +55,22 @@
 .dark-mode .real-data-table th{background:var(--panel-soft)}
 .dark-mode .api-notice{background:#22372a;color:#b7d9c0;border-color:#3b5c45}
 @media(max-width:900px){.form-grid{grid-template-columns:1fr}.form-wide{grid-column:auto}.real-data-table{min-width:700px}}
+
+
+/* Extended forms, reporting and print support */
+.data-form textarea,.data-form select,.data-form input{font:inherit}
+.data-form textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel-soft);color:var(--ink);resize:vertical}
+.report-tools{margin-bottom:18px}
+.report-tools p{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 14px}
+.report-tools .form-actions{display:flex;flex-wrap:wrap;gap:9px}
+.real-data-table td .icon-button{display:inline-grid;margin-right:5px;width:30px;height:30px}
+.real-data-table td select{max-width:125px;padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink)}
+@media print{
+  .sidebar,.topbar,.heading-actions,.top-actions,.nav-list,.form-actions,.icon-button,.primary-button,.secondary-button,.page-footer{display:none!important}
+  .main-area{margin:0!important}
+  .page-content{max-width:none;padding:0!important}
+  .app-shell{background:#fff!important;color:#111!important}
+  .panel,.overview-strip{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid}
+  .real-data-table{font-size:10px}
+  .data-table-scroll{overflow:visible!important}
+}
