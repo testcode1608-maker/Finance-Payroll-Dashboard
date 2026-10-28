@@ -196,6 +196,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
     </div>
    </section>
    <section className={"lamp-login-card "+(lampOn?"revealed":"")} aria-hidden={!lampOn}>
+    <div className="lamp-card-top"><span className="lamp-lock-icon"><LockKeyhole size={21}/></span><span className="lamp-card-badge"><span/> SECURE SIGN IN</span></div>
     <div className="lamp-card-heading"><h2>Bienvenue.</h2><p>Connectez-vous pour accéder à votre tableau de bord.</p></div>
     <form onSubmit={onSubmit} className="lamp-login-form">
      <label>Nom d’utilisateur<span className="lamp-input-wrap"><Users size={17}/><input autoComplete="username" required value={username} onChange={e=>setUsername(e.target.value)} placeholder="Votre nom d’utilisateur" tabIndex={lampOn?0:-1}/></span></label>
@@ -203,6 +204,8 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
      {error&&<div className="lamp-login-error" role="alert">{error}</div>}
      <button className="lamp-login-submit" type="submit" disabled={busy}>{busy?<><LoaderCircle size={17} className="login-spinner"/> Vérification…</>:<>Se connecter <ArrowUpRight size={17}/></>}</button>
     </form>
+    <div className="lamp-secure-note"><ShieldCheck size={16}/><span>Authentification vérifiée par le serveur. Vos données financières restent protégées.</span></div>
+    <div className="lamp-card-bottom"><span>FINANCE &amp; PAYROLL</span><span>ADMIN PORTAL · 01</span></div>
    </section>
   </div>
  </main>
