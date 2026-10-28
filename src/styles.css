@@ -206,3 +206,14 @@
  .lamp-art{top:105px;right:-32px;width:145px;height:195px;opacity:.65}
  .lamp-headline p{max-width:220px}
 }
+
+
+/* Align the login card with the top of the lamp scene and remove hint-button spacing */
+.lamp-layout{align-items:start}
+.lamp-scene{padding-top:0}
+.lamp-login-card{align-self:start;margin-top:0}
+.lamp-hint{display:none!important}
+@media(max-width:850px){
+ .lamp-layout{align-items:start}
+ .lamp-login-card{margin-top:0}
+}
