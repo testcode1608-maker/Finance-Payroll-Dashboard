@@ -10,6 +10,8 @@ import { employeesRouter } from './routes/employees.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import { payrollRouter } from './routes/payroll.routes.js';
 import { transactionsRouter } from './routes/transactions.routes.js';
+import { authRouter } from './routes/auth.routes.js';
+import { requireAdmin } from './middleware/require-admin.js';
 
 export const app = express();
 app.disable('x-powered-by');
@@ -20,6 +22,8 @@ app.get('/', (_request, response) => {
   response.json({ service: 'finance-payroll-api', status: 'ok', health: '/api/health' });
 });
 app.use('/api/health', healthRouter);
+app.use('/api/auth', authRouter);
+app.use('/api', requireAdmin);
 app.use('/api/departments', departmentsRouter);
 app.use('/api/cards', cardsRouter);
 app.use('/api/budgets', budgetsRouter);
