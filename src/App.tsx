@@ -176,9 +176,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
   <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
-    <div className="lamp-brand-row"><div className="lamp-brand"><span className="lamp-brand-mark"><Wallet size={20}/></span><span>Finance <b>&amp; Payroll</b></span></div><div className="lamp-color-controls" aria-label="اختيار لون الإضاءة">{([{id:"amber",label:"ذهبي",color:"#ffab3d"},{id:"cyan",label:"سماوي",color:"#00eaff"},{id:"rose",label:"وردي",color:"#ff5a9d"},{id:"mint",label:"أخضر",color:"#4dffad"},{id:"moonlight",label:"أبيض بارد",color:"#d8e5ff"}] as const).map(option=><button key={option.id} type="button" className={"lamp-color-dot "+(lampColor===option.id?"active":"")} style={{"--dot-color":option.color} as CSSProperties} onClick={()=>setLampColor(option.id)} aria-label={"لون المصباح: "+option.label} title={option.label}/>)}</div></div>
-    <div className="lamp-headline"><span className="lamp-eyebrow"><span className="lamp-status-dot"/> ESPACE ADMINISTRATEUR SÉCURISÉ</span><h1>Allumez votre espace.<br/><span>Maîtrisez vos finances.</span></h1><p>Tirez sur le cordon du luminaire pour allumer la lumière et révéler votre espace de connexion.</p></div>
-    <div className="lamp-art">
+     <div className="lamp-art">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
       <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?lampAccent:"#626a68"}/><stop offset=".55" stopColor={lampOn?lampAccent:"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor={lampAccent} stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor={lampAccent} stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
@@ -195,10 +193,8 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
      </svg>
      <div className="lamp-floor-glow" aria-hidden="true"/>
     </div>
-    <div className="lamp-scene-footer"><span><ShieldCheck size={14}/> ACCÈS PRIVÉ</span><span><span className="lamp-footer-dot"/> SERVEUR LOCAL</span></div>
    </section>
    <section className={"lamp-login-card "+(lampOn?"revealed":"")} aria-hidden={!lampOn}>
-    <div className="lamp-card-top"><span className="lamp-lock-icon"><LockKeyhole size={21}/></span><span className="lamp-card-badge"><span/> SECURE SIGN IN</span></div>
     <div className="lamp-card-heading"><h2>Bienvenue.</h2><p>Connectez-vous pour accéder à votre tableau de bord.</p></div>
     <form onSubmit={onSubmit} className="lamp-login-form">
      <label>Nom d’utilisateur<span className="lamp-input-wrap"><Users size={17}/><input autoComplete="username" required value={username} onChange={e=>setUsername(e.target.value)} placeholder="Votre nom d’utilisateur" tabIndex={lampOn?0:-1}/></span></label>
@@ -206,10 +202,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
      {error&&<div className="lamp-login-error" role="alert">{error}</div>}
      <button className="lamp-login-submit" type="submit" disabled={busy}>{busy?<><LoaderCircle size={17} className="login-spinner"/> Vérification…</>:<>Se connecter <ArrowUpRight size={17}/></>}</button>
     </form>
-    <div className="lamp-secure-note"><ShieldCheck size={16}/><span>Authentification vérifiée par le serveur. Vos données financières restent protégées.</span></div>
-    <div className="lamp-card-bottom"><span>FINANCE &amp; PAYROLL</span><span>ADMIN PORTAL · 01</span></div>
    </section>
   </div>
-  <footer className="lamp-page-footer">© {new Date().getFullYear()} Finance &amp; Payroll <span>•</span> Espace administrateur sécurisé</footer>
  </main>
 }
