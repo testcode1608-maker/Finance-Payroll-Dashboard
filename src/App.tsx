@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowLeftRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, Check, CircleDollarSign,
   CreditCard, Database, FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
@@ -163,7 +163,12 @@ export default App
 
 function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
  const [lampOn,setLampOn]=useState(false)
+ const [cordStartY,setCordStartY]=useState<number|null>(null)
+ const [cordDistance,setCordDistance]=useState(0)
  const toggleLamp=()=>setLampOn(value=>!value)
+ const startCordPull=(event:ReactPointerEvent<SVGGElement>)=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setCordStartY(event.clientY);setCordDistance(0)}
+ const moveCordPull=(event:ReactPointerEvent<SVGGElement>)=>{if(cordStartY!==null)setCordDistance(Math.max(0,Math.min(46,event.clientY-cordStartY)))}
+ const finishCordPull=()=>{if(cordStartY!==null&&cordDistance>16)toggleLamp();setCordStartY(null);setCordDistance(0)}
  return <main className={"lamp-screen "+(lampOn?"lamp-on":"lamp-off")}>
   <div className="lamp-ambient" aria-hidden="true"/>
   <div className="lamp-layout">
@@ -179,9 +184,9 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
       <path d="M90 87 C91 48 209 48 210 87 L229 126 Q150 151 71 126 Z" fill="url(#lampShade)" stroke={lampOn?"#fff1c3":"#747c77"} strokeOpacity=".8" strokeWidth="1.5"/>
       <ellipse cx="150" cy="126" rx="79" ry="12" fill={lampOn?"#fff4c6":"#171d1d"}/><ellipse cx="150" cy="126" rx="58" ry="7" fill={lampOn?"#fffbe7":"#0c1112"} opacity=".9"/>
       <path d="M91 87 Q150 111 209 87" fill="none" stroke="#ffffff" strokeOpacity={lampOn?".55":".12"} strokeWidth="2"/>
-      <g className="lamp-pull-cord" onClick={toggleLamp} role="button" tabIndex={0} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleLamp()}}} aria-label="Tirer le cordon pour allumer ou éteindre la lampe">
-       <path d="M202 123 V190" stroke="#aaa38e" strokeWidth="2" strokeLinecap="round"/><path d="M201 123 V190" stroke="#f6e4b8" strokeOpacity=".45" strokeWidth=".7"/>
-       <circle cx="202" cy="190" r="8" fill="#bda77c" stroke="#f6e2b3" strokeWidth="1.5"/><circle cx="202" cy="190" r="3" fill="#514a39"/><circle cx="202" cy="190" r="25" fill="transparent"/>
+      <g className="lamp-pull-cord" onPointerDown={startCordPull} onPointerMove={moveCordPull} onPointerUp={finishCordPull} onPointerCancel={finishCordPull} onClick={()=>{if(cordStartY===null&&cordDistance===0)toggleLamp()}} role="button" tabIndex={0} onKeyDown={event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleLamp()}}} aria-label="Tirer le cordon pour allumer ou éteindre la lampe">
+       <path d={`M202 123 V${190+cordDistance}`} stroke="#aaa38e" strokeWidth="2" strokeLinecap="round"/><path d={`M201 123 V${190+cordDistance}`} stroke="#f6e4b8" strokeOpacity=".45" strokeWidth=".7"/>
+       <circle cx="202" cy={190+cordDistance} r="8" fill="#bda77c" stroke="#f6e2b3" strokeWidth="1.5"/><circle cx="202" cy={190+cordDistance} r="3" fill="#514a39"/><circle cx="202" cy={190+cordDistance} r="25" fill="transparent"/>
       </g>
       <ellipse cx="150" cy="133" rx="48" ry="18" fill="url(#lampBulb)" opacity={lampOn?1:0}/>
      </svg>
