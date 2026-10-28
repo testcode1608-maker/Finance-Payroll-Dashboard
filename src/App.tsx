@@ -163,20 +163,17 @@ export default App
 
 function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
  const [lampOn,setLampOn]=useState(false)
- const [lampColor,setLampColor]=useState<'amber'|'cyan'|'rose'|'mint'|'moonlight'>('amber')
- const lampPalette={amber:'#ffd66e',cyan:'#00eaff',rose:'#ff5a9d',mint:'#4dffad',moonlight:'#d8e5ff'}
- const lampAccent=lampPalette[lampColor]
+ const lampAccent='#ffd66e'
  const [cordStartY,setCordStartY]=useState<number|null>(null)
  const [cordDistance,setCordDistance]=useState(0)
  const toggleLamp=()=>setLampOn(value=>!value)
  const startCordPull=(event:ReactPointerEvent<SVGGElement>)=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setCordStartY(event.clientY);setCordDistance(0)}
  const moveCordPull=(event:ReactPointerEvent<SVGGElement>)=>{if(cordStartY!==null)setCordDistance(Math.max(0,Math.min(46,event.clientY-cordStartY)))}
  const finishCordPull=()=>{if(cordStartY!==null&&cordDistance>16)toggleLamp();setCordStartY(null);setCordDistance(0)}
- return <main className={"lamp-screen lamp-color-"+lampColor+" "+(lampOn?"lamp-on":"lamp-off")} style={{"--lamp-accent":lampAccent} as CSSProperties}>
+ return <main className={"lamp-screen lamp-color-amber "+(lampOn?"lamp-on":"lamp-off")} style={{"--lamp-accent":lampAccent} as CSSProperties}>
   <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
-    <div className="lamp-color-controls" aria-label="اختيار لون الإضاءة">{([{id:"amber",label:"ذهبي",color:"#ffab3d"},{id:"cyan",label:"سماوي",color:"#00eaff"},{id:"rose",label:"وردي",color:"#ff5a9d"},{id:"mint",label:"أخضر",color:"#4dffad"},{id:"moonlight",label:"أبيض بارد",color:"#d8e5ff"}] as const).map(option=><button key={option.id} type="button" className={"lamp-color-dot "+(lampColor===option.id?"active":"")} style={{"--dot-color":option.color} as CSSProperties} onClick={()=>setLampColor(option.id)} aria-label={"لون المصباح: "+option.label} title={option.label}/>)}</div>
      <div className="lamp-art">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
