@@ -279,7 +279,7 @@
 .lamp-screen:not(.lamp-on) .lamp-login-card{display:block!important;opacity:0!important;pointer-events:none!important;transform:translateY(30px) scale(.96)!important}
 .lamp-screen.lamp-on .lamp-login-card{display:block!important;opacity:1!important;pointer-events:auto!important;transform:translateY(0) scale(1)!important}
 .lamp-screen:not(.lamp-on) .lamp-login-card input,.lamp-screen:not(.lamp-on) .lamp-login-card button{pointer-events:none}
-.lamp-screen .lamp-scene-footer,.lamp-screen .lamp-page-footer,.lamp-screen .lamp-brand,.lamp-screen .lamp-brand-row,.lamp-screen .lamp-headline,.lamp-screen .lamp-card-top,.lamp-screen .lamp-card-bottom,.lamp-screen .lamp-secure-note{display:none!important}
+.lamp-screen .lamp-scene-footer,.lamp-screen .lamp-page-footer,.lamp-screen .lamp-brand,.lamp-screen .lamp-brand-row,.lamp-screen .lamp-headline{display:none!important}
 @media(max-width:760px){
  .lamp-layout{width:min(100% - 28px,440px)!important;grid-template-columns:minmax(0,1fr)!important;gap:18px!important}
  .lamp-scene{min-height:310px!important;grid-column:1;grid-row:1}
@@ -294,3 +294,11 @@
  .lamp-art{top:20px!important;width:195px!important;height:255px!important}
  .lamp-login-card{padding:1.6rem 1.25rem!important}
 }
+
+/* Keep the requested secure-login card details visible without restoring the removed page branding. */
+.lamp-login-card .lamp-card-top{display:flex!important;align-items:center;justify-content:space-between;gap:12px;margin-bottom:0}
+.lamp-login-card .lamp-card-heading{margin-top:24px!important}
+.lamp-login-card .lamp-secure-note{display:flex!important;align-items:flex-start;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.09);color:#9ba69b;font-size:10px;line-height:1.7}
+.lamp-login-card .lamp-secure-note svg{flex:none;color:#9bc9a3}
+.lamp-login-card .lamp-card-bottom{display:flex!important;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);color:#778078;font-size:8px;letter-spacing:.9px}
+@media(max-width:760px){.lamp-login-card .lamp-card-heading{margin-top:20px!important}}
