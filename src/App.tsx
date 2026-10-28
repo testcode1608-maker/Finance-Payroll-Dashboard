@@ -340,7 +340,7 @@ function App() {
             {!['Overview', 'Transactions', 'Team members', 'Departments', 'Payroll'].includes(active) && <section className="panel coming-soon"><span className="overview-icon"><Database size={18} /></span><h2>{active}</h2><p>{subtitle[active] || 'Cette section sera connectée à l’API dans une prochaine étape.'}</p><p className="coming-note">Aucune donnée de démonstration n’est affichée ici. Les cartes, budgets et échéances seront activés une fois leurs routes API disponibles.</p><button className="secondary-button" onClick={() => openSection('Overview')}>Retour au Dashboard</button></section>}
           </>}
 
-          <footer className="page-footer"><span>Finance & Payroll · données locales</span><span><ShieldCheck size={13} /> Connecté à l’API PostgreSQL</span><span>API : localhost:3001</span></footer>
+          <footer className="page-footer"><span>Finance & Payroll · données locales</span><span><ShieldCheck size={13} /> {error ? 'Connexion à vérifier' : loading ? 'Connexion en cours…' : 'Connecté à l’API PostgreSQL'}</span><span>API : localhost:3001</span></footer>
         </section>
       </main>
     </div>
