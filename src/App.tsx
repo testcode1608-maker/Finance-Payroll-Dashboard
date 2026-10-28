@@ -1,7 +1,7 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowLeftRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, Check, CircleDollarSign,
-  CreditCard, Database, FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
+  CreditCard, Database, FileText, Home, Menu, Moon, Plus, RefreshCw, Search,
   Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, X, Zap, Trash2, Pencil, Download, Printer,
 } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -11,7 +11,7 @@ import {
   getBudgets, getCards, getDepartments, getDues, getEmployees, getPayrollItems, getPayrollPeriods,
   getPayrollSummary, getTransactions, setPayrollItemPayment, updateDueStatus, updateEmployee,
   type Budget, type CompanyCard, type Department, type Due, type Employee, type PayrollItem,
-  type PayrollPeriod, type PayrollSummary, type Transaction,
+  type PayrollSummary, type Transaction,
 } from './lib/api'
 
 const navGroups = [
@@ -146,6 +146,6 @@ function App(){
 function FormActions({saving,onCancel}:{saving:boolean;onCancel:()=>void}){return <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Annuler</button><button disabled={saving} className="primary-button">{saving?'Enregistrement…':'Enregistrer dans PostgreSQL'}</button></div>}
 function Metric({label,value,foot}:{label:string;value:string|number;foot:string}){return <div className="overview-cell"><div className="overview-label"><span>{label}</span><span className="overview-icon"><CircleDollarSign size={15}/></span></div><div className="overview-value">{value}</div><div className="overview-foot">{foot}</div></div>}
 function Empty({text}:{text:string}){return <div className="empty-state">{text}</div>}
-function DataTable({headers,rows}:{headers:string[];rows:React.ReactNode[][]}){if(!rows.length)return <Empty text="Aucune donnée enregistrée dans PostgreSQL."/>;return <div className="data-table-scroll"><table className="real-data-table"><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>}
+function DataTable({headers,rows}:{headers:string[];rows:ReactNode[][]}){if(!rows.length)return <Empty text="Aucune donnée enregistrée dans PostgreSQL."/>;return <div className="data-table-scroll"><table className="real-data-table"><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>}
 function TransactionTable({items}:{items:Transaction[]}){if(!items.length)return <Empty text="Aucune transaction enregistrée."/>;return <div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Marchand</th><th>Catégorie</th><th>Date</th><th>Montant</th><th>Statut</th></tr></thead><tbody>{items.map(t=><tr key={t.id}><td><strong>{t.merchant}</strong><small>{t.description||t.employeeName||'—'}</small></td><td>{t.category}</td><td>{dateLabel(t.transactionDate)}</td><td>{money(t.amount)}</td><td>{t.status==='complete'?'Terminé':t.status==='needs_receipt'?'Justificatif requis':'En attente'}</td></tr>)}</tbody></table></div>}
 export default App
