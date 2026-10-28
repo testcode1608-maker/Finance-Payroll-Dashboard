@@ -1,355 +1,151 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Activity, ArrowLeftRight, ArrowUpRight, Bell, BriefcaseBusiness,
-  CalendarDays, Check, CircleDollarSign, CreditCard, Database,
-  FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
-  Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, X, Zap,
+  Activity, ArrowLeftRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, Check, CircleDollarSign,
+  CreditCard, Database, FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
+  Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, X, Zap, Trash2, Pencil, Download, Printer,
 } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
-  createDepartment, createEmployee, createTransaction, getDepartments, getEmployees, getPayrollSummary,
-  getTransactions, type Department, type Employee, type PayrollSummary, type Transaction,
+  createBudget, createCard, createDepartment, createDue, createEmployee, createPayrollPeriod,
+  createTransaction, deleteBudget, deleteCard, deleteDue, deleteEmployee, generatePayroll,
+  getBudgets, getCards, getDepartments, getDues, getEmployees, getPayrollItems, getPayrollPeriods,
+  getPayrollSummary, getTransactions, setPayrollItemPayment, updateDueStatus, updateEmployee,
+  type Budget, type CompanyCard, type Department, type Due, type Employee, type PayrollItem,
+  type PayrollPeriod, type PayrollSummary, type Transaction,
 } from './lib/api'
 
 const navGroups = [
-  { title: 'WORKSPACE', items: [{ label: 'Overview', icon: Home }, { label: 'Transactions', icon: ArrowLeftRight }, { label: 'Cards', icon: CreditCard }, { label: 'Budgets', icon: SlidersHorizontal }, { label: 'Dues', icon: CalendarDays }] },
-  { title: 'PEOPLE', items: [{ label: 'Team members', icon: Users }, { label: 'Payroll', icon: Wallet }, { label: 'Departments', icon: BriefcaseBusiness }] },
-  { title: 'MANAGE', items: [{ label: 'Reports', icon: FileText }, { label: 'Integrations', icon: Zap }, { label: 'Settings', icon: Settings }] },
+  { title:'WORKSPACE', items:[{label:'Overview',icon:Home},{label:'Transactions',icon:ArrowLeftRight},{label:'Cards',icon:CreditCard},{label:'Budgets',icon:SlidersHorizontal},{label:'Dues',icon:CalendarDays}] },
+  { title:'PEOPLE', items:[{label:'Team members',icon:Users},{label:'Payroll',icon:Wallet},{label:'Departments',icon:BriefcaseBusiness}] },
+  { title:'MANAGE', items:[{label:'Reports',icon:FileText},{label:'Integrations',icon:Zap},{label:'Settings',icon:Settings}] },
 ]
+const money=(v:number|string|null|undefined)=>new Intl.NumberFormat('fr-DZ',{style:'currency',currency:'DZD',maximumFractionDigits:2}).format(Number(v||0))
+const dateLabel=(v:string|null|undefined)=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?v:new Intl.DateTimeFormat('fr-DZ',{dateStyle:'medium'}).format(d)}
+const fullName=(e:Employee)=>`${e.firstName} ${e.lastName}`
+const today=()=>new Date().toISOString().slice(0,10)
+const monthStart=()=>today().slice(0,7)+'-01'
+const initialEmployee=()=>({employeeCode:'',firstName:'',lastName:'',email:'',phone:'',departmentId:'',position:'',hireDate:'',baseSalary:'',employmentStatus:'active' as Employee['employmentStatus'],address:'',contractType:'permanent' as Employee['contractType'],workSchedule:'full_time' as Employee['workSchedule'],notes:''})
+const initialTransaction=()=>({merchant:'',category:'',amount:'',transactionDate:today(),departmentId:'',employeeId:'',description:'',status:'needs_receipt' as Transaction['status']})
 
-const money = (value: number | string | null | undefined) => new Intl.NumberFormat('fr-DZ', {
-  style: 'currency', currency: 'DZD', maximumFractionDigits: 2,
-}).format(Number(value || 0))
-const dateLabel = (value: string | null | undefined) => {
-  if (!value) return '—'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('fr-DZ', { dateStyle: 'medium' }).format(date)
-}
-const fullName = (employee: Employee) => `${employee.firstName} ${employee.lastName}`
+function App(){
+ const [active,setActive]=useState('Overview')
+ const [departments,setDepartments]=useState<Department[]>([])
+ const [employees,setEmployees]=useState<Employee[]>([])
+ const [transactions,setTransactions]=useState<Transaction[]>([])
+ const [cards,setCards]=useState<CompanyCard[]>([])
+ const [budgets,setBudgets]=useState<Budget[]>([])
+ const [dues,setDues]=useState<Due[]>([])
+ const [payroll,setPayroll]=useState<PayrollSummary|null>(null)
+ const [periods,setPeriods]=useState<PayrollPeriod[]>([])
+ const [payrollItems,setPayrollItems]=useState<PayrollItem[]>([])
+ const [selectedPeriod,setSelectedPeriod]=useState('')
+ const [query,setQuery]=useState('')
+ const [mobileNav,setMobileNav]=useState(false)
+ const [dark,setDark]=useState(false)
+ const [loading,setLoading]=useState(true)
+ const [refreshing,setRefreshing]=useState(false)
+ const [saving,setSaving]=useState(false)
+ const [error,setError]=useState('')
+ const [notice,setNotice]=useState('')
+ const [showForm,setShowForm]=useState(false)
+ const [editingEmployeeId,setEditingEmployeeId]=useState<number|null>(null)
+ const [employeeForm,setEmployeeForm]=useState(initialEmployee)
+ const [departmentForm,setDepartmentForm]=useState({name:'',description:'',monthlyBudget:''})
+ const [transactionForm,setTransactionForm]=useState(initialTransaction)
+ const [cardForm,setCardForm]=useState({cardLabel:'',cardholderName:'',lastFour:'',spendingLimit:'',currentSpend:'0',status:'active' as CompanyCard['status']})
+ const [budgetForm,setBudgetForm]=useState({departmentId:'',monthStart:monthStart(),amount:''})
+ const [dueForm,setDueForm]=useState({title:'',amount:'',dueDate:today(),employeeId:'',status:'upcoming' as Due['status'],notes:''})
+ const [periodForm,setPeriodForm]=useState({periodStart:monthStart(),periodEnd:today(),notes:''})
 
-function App() {
-  const [active, setActive] = useState('Overview')
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [payroll, setPayroll] = useState<PayrollSummary | null>(null)
-  const [query, setQuery] = useState('')
-  const [mobileNav, setMobileNav] = useState(false)
-  const [dark, setDark] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [departmentForm, setDepartmentForm] = useState({ name: '', description: '', monthlyBudget: '' })
-  const [transactionForm, setTransactionForm] = useState({ merchant: '', category: '', amount: '', transactionDate: new Date().toISOString().slice(0, 10), departmentId: '', employeeId: '', description: '', status: 'needs_receipt' as Transaction['status'] })
-  const [employeeForm, setEmployeeForm] = useState({
-    employeeCode: '', firstName: '', lastName: '', email: '', phone: '',
-    departmentId: '', position: '', hireDate: '', baseSalary: '', employmentStatus: 'active' as Employee['employmentStatus'],
-  })
+ const loadData=useCallback(async(quiet=false)=>{
+  quiet?setRefreshing(true):setLoading(true);setError('')
+  try{
+   const [d,e,t,p,c,b,du,ps]=await Promise.all([getDepartments(),getEmployees(),getTransactions(),getPayrollSummary(),getCards(),getBudgets(),getDues(),getPayrollPeriods()])
+   setDepartments(d);setEmployees(e);setTransactions(t);setPayroll(p);setCards(c);setBudgets(b);setDues(du);setPeriods(ps)
+   if(selectedPeriod){try{setPayrollItems(await getPayrollItems(Number(selectedPeriod)))}catch{setPayrollItems([])}}
+   else if(ps.length){setSelectedPeriod(String(ps[0].id));setPayrollItems(await getPayrollItems(ps[0].id).catch(()=>[]))}
+  }catch(err){setError(err instanceof Error?err.message:'Impossible de charger les données.')}
+  finally{setLoading(false);setRefreshing(false)}
+ },[selectedPeriod])
+ useEffect(()=>{void loadData()},[loadData])
 
-  const loadData = useCallback(async (quiet = false) => {
-    if (quiet) setRefreshing(true)
-    else setLoading(true)
-    setError('')
-    try {
-      const results = await Promise.all([
-        getDepartments(), getEmployees(), getTransactions(), getPayrollSummary(),
-      ])
-      setDepartments(results[0])
-      setEmployees(results[1])
-      setTransactions(results[2])
-      setPayroll(results[3])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger les données.')
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
+ const filteredEmployees=useMemo(()=>employees.filter(e=>`${fullName(e)} ${e.employeeCode} ${e.position} ${e.departmentName||''} ${e.email||''} ${e.phone||''}`.toLowerCase().includes(query.toLowerCase())),[employees,query])
+ const filteredTransactions=useMemo(()=>transactions.filter(t=>`${t.merchant} ${t.category} ${t.departmentName||''} ${t.employeeName||''}`.toLowerCase().includes(query.toLowerCase())),[transactions,query])
+ const filteredDepartments=useMemo(()=>departments.filter(d=>`${d.name} ${d.description||''}`.toLowerCase().includes(query.toLowerCase())),[departments,query])
+ const totalTransactions=transactions.reduce((s,t)=>s+Number(t.amount||0),0)
+ const receiptCount=transactions.filter(t=>t.status==='needs_receipt').length
+ const chartData=useMemo(()=>{const m=new Map<string,number>();transactions.forEach(t=>{const d=new Date(t.transactionDate);if(!Number.isNaN(d.getTime())){const k=new Intl.DateTimeFormat('fr-DZ',{day:'2-digit',month:'short'}).format(d);m.set(k,(m.get(k)||0)+Number(t.amount||0))}});return Array.from(m,([day,spend])=>({day,spend})).slice(0,7).reverse()},[transactions])
+ const openSection=(label:string)=>{setActive(label);setShowForm(false);setNotice('');setMobileNav(false);setQuery('')}
+ const startEdit=(e:Employee)=>{setEmployeeForm({employeeCode:e.employeeCode,firstName:e.firstName,lastName:e.lastName,email:e.email||'',phone:e.phone||'',departmentId:e.departmentId?String(e.departmentId):'',position:e.position,hireDate:e.hireDate?.slice(0,10)||'',baseSalary:String(e.baseSalary),employmentStatus:e.employmentStatus,address:e.address||'',contractType:e.contractType||'permanent',workSchedule:e.workSchedule||'full_time',notes:e.notes||''});setEditingEmployeeId(e.id);setShowForm(true);window.scrollTo({top:0,behavior:'smooth'})}
+ const submit=async(event:FormEvent<HTMLFormElement>,job:()=>Promise<unknown>,message:string,reset?:()=>void)=>{event.preventDefault();setSaving(true);setError('');setNotice('');try{await job();reset?.();setShowForm(false);setEditingEmployeeId(null);setNotice(message);await loadData(true)}catch(err){setError(err instanceof Error?err.message:'Échec de l’enregistrement.')}finally{setSaving(false)}}
+ const employeePayload=()=>({employeeCode:employeeForm.employeeCode.trim(),firstName:employeeForm.firstName.trim(),lastName:employeeForm.lastName.trim(),email:employeeForm.email.trim()||null,phone:employeeForm.phone.trim()||null,departmentId:employeeForm.departmentId?Number(employeeForm.departmentId):null,position:employeeForm.position.trim(),hireDate:employeeForm.hireDate||null,baseSalary:Number(employeeForm.baseSalary||0),employmentStatus:employeeForm.employmentStatus,address:employeeForm.address.trim()||null,contractType:employeeForm.contractType,workSchedule:employeeForm.workSchedule,notes:employeeForm.notes.trim()||null})
+ const removeEmployee=async(e:Employee)=>{if(!window.confirm(`Supprimer ${fullName(e)} ? Cette action est définitive.`))return;try{await deleteEmployee(e.id);setNotice('Employé supprimé.');await loadData(true)}catch(err){setError(err instanceof Error?err.message:'Impossible de supprimer cet employé.')}}
 
-  useEffect(() => { void loadData() }, [loadData])
+ const exportCsv=(name:string,headers:string[],rows:(string|number)[][])=>{const csv=[headers,...rows].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);setNotice('Export CSV compatible Excel généré.')}
+ const exportReport=()=>{const rows=active==='Transactions'?transactions.map(t=>[t.merchant,t.category,t.transactionDate,t.amount,t.status]):active==='Payroll'?payrollItems.map(i=>[i.employeeCode,i.employeeName,i.baseSalary,i.bonuses,i.deductions,i.netSalary,i.paymentStatus]):employees.map(e=>[e.employeeCode,fullName(e),e.position,e.departmentName||'',e.email||'',e.phone||'',e.baseSalary,e.employmentStatus]);const headers=active==='Transactions'?['Marchand','Catégorie','Date','Montant DA','Statut']:active==='Payroll'?['Matricule','Employé','Salaire de base','Primes','Retenues','Net à payer','Paiement']:['Matricule','Nom complet','Poste','Département','Email','Téléphone','Salaire de base DA','Statut'];exportCsv(`rapport-${active.toLowerCase().replaceAll(' ','-')}.csv`,headers,rows)}
+ const canCreate=['Departments','Team members','Transactions','Cards','Budgets','Dues','Payroll'].includes(active)
+ const heading=active==='Team members'?'Employés':active
+ const subtitles:Record<string,string>={Overview:'Vue d’ensemble calculée depuis PostgreSQL.',Transactions:'Opérations financières enregistrées dans la base.', 'Team members':'Dossiers employés complets : coordonnées, contrat, poste et salaire.',Departments:'Départements et budgets mensuels.',Payroll:'Périodes, calcul du brut, primes, retenues et net à payer.',Cards:'Cartes d’entreprise : titulaire, plafond et consommation.',Budgets:'Budgets mensuels par département.',Dues:'Échéances, montants et statuts de paiement.',Reports:'Exporter les données en CSV compatible Excel ou imprimer en PDF.',Integrations:'Configuration des intégrations.',Settings:'Paramètres de l’application.'}
 
-  const filteredTransactions = useMemo(() => transactions.filter(item =>
-    `${item.merchant} ${item.category} ${item.departmentName || ''} ${item.employeeName || ''}`.toLowerCase().includes(query.toLowerCase())
-  ), [transactions, query])
-  const filteredEmployees = useMemo(() => employees.filter(item =>
-    `${fullName(item)} ${item.employeeCode} ${item.position} ${item.departmentName || ''}`.toLowerCase().includes(query.toLowerCase())
-  ), [employees, query])
-  const filteredDepartments = useMemo(() => departments.filter(item =>
-    `${item.name} ${item.description || ''}`.toLowerCase().includes(query.toLowerCase())
-  ), [departments, query])
+ return <div className={`app-shell ${dark?'dark-mode':''}`}>
+  {mobileNav&&<button className="mobile-scrim" aria-label="Fermer la navigation" onClick={()=>setMobileNav(false)}/>}
+  <aside className={`sidebar ${mobileNav?'sidebar-open':''}`}>
+   <button className="brand" onClick={()=>openSection('Overview')} aria-label="Accueil"><span className="brand-mark"><span/></span><span className="brand-name">Money<span>.</span></span></button>
+   <div className="workspace-switch"><div className="workspace-avatar">FP</div><div className="workspace-copy"><strong>Finance & Payroll</strong><small>PostgreSQL workspace</small></div><Database size={15}/></div>
+   <div className="sidebar-section"><span className="section-caption">VOTRE ESPACE</span><div className="money-summary"><div><strong>Finance</strong><small>Transactions, équipe,<br/>départements et paie</small></div><span className="tiny-icon"><Wallet size={15}/></span></div></div>
+   <nav className="nav-list">{navGroups.map(group=><div className="nav-group" key={group.title}><div className="nav-heading">{group.title}</div>{group.items.map(item=>{const Icon=item.icon;return <button key={item.label} className={`nav-item ${active===item.label?'active':''}`} onClick={()=>openSection(item.label)}><Icon size={17}/><span>{item.label==='Team members'?'Employés':item.label==='Departments'?'Départements':item.label}</span>{item.label==='Team members'&&<small className="nav-count">{employees.length}</small>}</button>})}</div>)}</nav>
+   <div className="close-progress"><div className="close-title"><span>État de connexion</span><span>{error?'Erreur':loading?'…':'OK'}</span></div><div className="progress-track"><span style={{width:error?'25%':loading?'50%':'100%'}}/></div><small>{error?'Vérifiez le serveur API':'API locale · port 3001'}</small></div>
+   <div className="sidebar-bottom"><div className="profile-avatar">DB</div><div className="profile-copy"><strong>Base de données locale</strong><small>hani-model-1 · PostgreSQL</small></div><ShieldCheck size={16}/></div>
+  </aside>
+  <main className="main-area">
+   <header className="topbar"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Ouvrir la navigation"><Menu size={20}/></button><div className="breadcrumbs"><span>Finance & Payroll</span><span className="crumb-chevron">›</span><span>Workspace</span><span className="crumb-chevron">›</span><strong>{heading}</strong></div><div className="top-actions"><label className="search-box"><Search size={16}/><input placeholder="Rechercher..." value={query} onChange={e=>setQuery(e.target.value)}/></label><button className="icon-button" aria-label="Actualiser" onClick={()=>void loadData(true)} disabled={refreshing}><RefreshCw size={16}/></button><button className="icon-button" aria-label="Changer le thème" onClick={()=>setDark(!dark)}><Moon size={17}/></button>{canCreate&&<button className="primary-button top-new" onClick={()=>{if(active==='Team members'&&editingEmployeeId){setEditingEmployeeId(null);setEmployeeForm(initialEmployee())}setShowForm(!showForm)}}><Plus size={16}/> Ajouter</button>}</div></header>
+   <section className="page-content">
+    <div className="page-heading"><div><div className="eyebrow"><span className="status-dot"/> DONNÉES EN DIRECT</div><h1>{heading}</h1><p>{subtitles[active]||'Gestion de votre espace Finance & Payroll.'}</p></div><div className="heading-actions"><button className="secondary-button" onClick={()=>void loadData(true)}><RefreshCw size={14}/> Actualiser</button>{canCreate&&<button className="primary-button" onClick={()=>{if(active==='Team members'&&editingEmployeeId){setEditingEmployeeId(null);setEmployeeForm(initialEmployee())}setShowForm(!showForm)}}><Plus size={16}/> {active==='Team members'?'Nouvel employé':active==='Departments'?'Nouveau département':active==='Transactions'?'Nouvelle transaction':active==='Payroll'?'Nouvelle période':active==='Cards'?'Nouvelle carte':active==='Budgets'?'Nouveau budget':'Nouvelle échéance'}</button>}</div></div>
+    {error&&<div className="api-alert" role="alert"><strong>Erreur</strong><span>{error}</span><button className="secondary-button" onClick={()=>void loadData(true)}>Réessayer</button></div>}
+    {notice&&<div className="api-notice" role="status"><Check size={16}/>{notice}<button onClick={()=>setNotice('')} aria-label="Fermer"><X size={14}/></button></div>}
+    {active==='Reports'&&<div className="panel report-tools"><h2>Exporter les rapports</h2><p>Le CSV s’ouvre dans Microsoft Excel. Pour un PDF, utilisez l’impression du navigateur puis choisissez « Enregistrer au format PDF ».</p><div className="form-actions"><button className="primary-button" onClick={exportReport}><Download size={15}/> Exporter {active==='Payroll'?'la paie':'les employés'} en CSV</button><button className="secondary-button" onClick={()=>window.print()}><Printer size={15}/> Imprimer / PDF</button></div><p className="coming-note">Pour exporter une catégorie précise, ouvrez Employés, Transactions ou Paie, puis utilisez le bouton Exporter.</p></div>}
 
-  const totalTransactions = transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  const receiptCount = transactions.filter(item => item.status === 'needs_receipt').length
-  const chartData = useMemo(() => {
-    const buckets = new Map<string, number>()
-    transactions.forEach(item => {
-      const date = new Date(item.transactionDate)
-      if (!Number.isNaN(date.getTime())) {
-        const key = new Intl.DateTimeFormat('fr-DZ', { day: '2-digit', month: 'short' }).format(date)
-        buckets.set(key, (buckets.get(key) || 0) + Number(item.amount || 0))
-      }
-    })
-    return Array.from(buckets, ([day, spend]) => ({ day, spend })).slice(0, 7).reverse()
-  }, [transactions])
+    {showForm&&active==='Team members'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>editingEmployeeId?updateEmployee(editingEmployeeId,employeePayload()):createEmployee(employeePayload()),editingEmployeeId?'Employé modifié dans PostgreSQL.':'Employé ajouté dans PostgreSQL.',()=>{setEmployeeForm(initialEmployee());setEditingEmployeeId(null)})}><h2>{editingEmployeeId?'Modifier le dossier employé':'Ajouter un employé'}</h2><div className="form-grid">
+     <label>Matricule *<input required maxLength={40} value={employeeForm.employeeCode} onChange={e=>setEmployeeForm({...employeeForm,employeeCode:e.target.value})}/></label><label>Poste / fonction *<input required value={employeeForm.position} onChange={e=>setEmployeeForm({...employeeForm,position:e.target.value})}/></label><label>Prénom *<input required value={employeeForm.firstName} onChange={e=>setEmployeeForm({...employeeForm,firstName:e.target.value})}/></label><label>Nom *<input required value={employeeForm.lastName} onChange={e=>setEmployeeForm({...employeeForm,lastName:e.target.value})}/></label><label>E-mail<input type="email" value={employeeForm.email} onChange={e=>setEmployeeForm({...employeeForm,email:e.target.value})}/></label><label>Téléphone<input value={employeeForm.phone} onChange={e=>setEmployeeForm({...employeeForm,phone:e.target.value})}/></label><label>Département<select value={employeeForm.departmentId} onChange={e=>setEmployeeForm({...employeeForm,departmentId:e.target.value})}><option value="">Aucun</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Date d’embauche<input type="date" value={employeeForm.hireDate} onChange={e=>setEmployeeForm({...employeeForm,hireDate:e.target.value})}/></label><label>Salaire de base (DA) *<input required type="number" min="0" step=".01" value={employeeForm.baseSalary} onChange={e=>setEmployeeForm({...employeeForm,baseSalary:e.target.value})}/></label><label>Statut<select value={employeeForm.employmentStatus} onChange={e=>setEmployeeForm({...employeeForm,employmentStatus:e.target.value as Employee['employmentStatus']})}><option value="active">Actif</option><option value="on_leave">En congé</option><option value="inactive">Inactif</option></select></label><label>Type de contrat<select value={employeeForm.contractType} onChange={e=>setEmployeeForm({...employeeForm,contractType:e.target.value as Employee['contractType']})}><option value="permanent">CDI / Permanent</option><option value="fixed_term">CDD</option><option value="part_time">Temps partiel</option><option value="internship">Stage</option><option value="freelance">Freelance</option></select></label><label>Horaire<select value={employeeForm.workSchedule} onChange={e=>setEmployeeForm({...employeeForm,workSchedule:e.target.value as Employee['workSchedule']})}><option value="full_time">Temps plein</option><option value="part_time">Temps partiel</option><option value="shift">Équipe / rotation</option></select></label><label className="form-wide">Adresse<input value={employeeForm.address} onChange={e=>setEmployeeForm({...employeeForm,address:e.target.value})}/></label><label className="form-wide">Notes internes<textarea rows={2} value={employeeForm.notes} onChange={e=>setEmployeeForm({...employeeForm,notes:e.target.value})}/></label>
+    </div><div className="form-actions"><button type="button" className="secondary-button" onClick={()=>{setShowForm(false);setEditingEmployeeId(null)}}>Annuler</button><button disabled={saving} className="primary-button">{saving?'Enregistrement…':'Enregistrer dans PostgreSQL'}</button></div></form>}
 
-  const openSection = (label: string) => {
-    setActive(label)
-    setShowForm(false)
-    setNotice('')
-    setMobileNav(false)
-  }
+    {showForm&&active==='Departments'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>createDepartment({name:departmentForm.name.trim(),description:departmentForm.description.trim()||undefined,monthlyBudget:Number(departmentForm.monthlyBudget||0)}),'Département enregistré.',()=>setDepartmentForm({name:'',description:'',monthlyBudget:''}))}><h2>Nouveau département</h2><div className="form-grid"><label>Nom *<input required value={departmentForm.name} onChange={e=>setDepartmentForm({...departmentForm,name:e.target.value})}/></label><label>Budget mensuel (DA)<input type="number" min="0" step=".01" value={departmentForm.monthlyBudget} onChange={e=>setDepartmentForm({...departmentForm,monthlyBudget:e.target.value})}/></label><label className="form-wide">Description<input value={departmentForm.description} onChange={e=>setDepartmentForm({...departmentForm,description:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-  const submitDepartment = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSaving(true)
-    setError('')
-    setNotice('')
-    try {
-      await createDepartment({
-        name: departmentForm.name.trim(),
-        description: departmentForm.description.trim() || undefined,
-        monthlyBudget: Number(departmentForm.monthlyBudget || 0),
-      })
-      setDepartmentForm({ name: '', description: '', monthlyBudget: '' })
-      setShowForm(false)
-      setNotice('Département enregistré dans PostgreSQL.')
-      await loadData(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la création du département.')
-    } finally { setSaving(false) }
-  }
+    {showForm&&active==='Transactions'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>createTransaction({merchant:transactionForm.merchant,category:transactionForm.category,amount:Number(transactionForm.amount),transactionDate:transactionForm.transactionDate,departmentId:transactionForm.departmentId?Number(transactionForm.departmentId):null,employeeId:transactionForm.employeeId?Number(transactionForm.employeeId):null,description:transactionForm.description||null,status:transactionForm.status}),'Transaction enregistrée.',()=>setTransactionForm(initialTransaction()))}><h2>Nouvelle transaction</h2><div className="form-grid"><label>Bénéficiaire *<input required value={transactionForm.merchant} onChange={e=>setTransactionForm({...transactionForm,merchant:e.target.value})}/></label><label>Catégorie *<input required value={transactionForm.category} onChange={e=>setTransactionForm({...transactionForm,category:e.target.value})}/></label><label>Montant DA *<input required type="number" min="0" step=".01" value={transactionForm.amount} onChange={e=>setTransactionForm({...transactionForm,amount:e.target.value})}/></label><label>Date<input required type="date" value={transactionForm.transactionDate} onChange={e=>setTransactionForm({...transactionForm,transactionDate:e.target.value})}/></label><label>Département<select value={transactionForm.departmentId} onChange={e=>setTransactionForm({...transactionForm,departmentId:e.target.value})}><option value="">Aucun</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Employé<select value={transactionForm.employeeId} onChange={e=>setTransactionForm({...transactionForm,employeeId:e.target.value})}><option value="">Aucun</option>{employees.map(e=><option key={e.id} value={e.id}>{fullName(e)}</option>)}</select></label><label>Statut<select value={transactionForm.status} onChange={e=>setTransactionForm({...transactionForm,status:e.target.value as Transaction['status']})}><option value="needs_receipt">Justificatif requis</option><option value="pending">En attente</option><option value="complete">Terminé</option></select></label><label>Description<input value={transactionForm.description} onChange={e=>setTransactionForm({...transactionForm,description:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-  const submitEmployee = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSaving(true)
-    setError('')
-    setNotice('')
-    try {
-      await createEmployee({
-        employeeCode: employeeForm.employeeCode.trim(),
-        firstName: employeeForm.firstName.trim(),
-        lastName: employeeForm.lastName.trim(),
-        email: employeeForm.email.trim() || null,
-        phone: employeeForm.phone.trim() || null,
-        departmentId: employeeForm.departmentId ? Number(employeeForm.departmentId) : null,
-        position: employeeForm.position.trim(),
-        hireDate: employeeForm.hireDate || null,
-        baseSalary: Number(employeeForm.baseSalary || 0),
-        employmentStatus: employeeForm.employmentStatus,
-      })
-      setEmployeeForm({
-        employeeCode: '', firstName: '', lastName: '', email: '', phone: '',
-        departmentId: '', position: '', hireDate: '', baseSalary: '', employmentStatus: 'active',
-      })
-      setShowForm(false)
-      setNotice('Employé enregistré dans PostgreSQL.')
-      await loadData(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la création de l’employé.')
-    } finally { setSaving(false) }
-  }
+    {showForm&&active==='Cards'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>createCard({cardLabel:cardForm.cardLabel,cardholderName:cardForm.cardholderName,lastFour:cardForm.lastFour,spendingLimit:Number(cardForm.spendingLimit),currentSpend:Number(cardForm.currentSpend),status:cardForm.status}),'Carte enregistrée.',()=>setCardForm({cardLabel:'',cardholderName:'',lastFour:'',spendingLimit:'',currentSpend:'0',status:'active'}))}><h2>Nouvelle carte d’entreprise</h2><div className="form-grid"><label>Libellé *<input required value={cardForm.cardLabel} onChange={e=>setCardForm({...cardForm,cardLabel:e.target.value})}/></label><label>Titulaire *<input required value={cardForm.cardholderName} onChange={e=>setCardForm({...cardForm,cardholderName:e.target.value})}/></label><label>4 derniers chiffres *<input required pattern="[0-9]{4}" maxLength={4} value={cardForm.lastFour} onChange={e=>setCardForm({...cardForm,lastFour:e.target.value})}/></label><label>Plafond DA *<input required type="number" min="0" step=".01" value={cardForm.spendingLimit} onChange={e=>setCardForm({...cardForm,spendingLimit:e.target.value})}/></label><label>Dépenses actuelles DA<input type="number" min="0" step=".01" value={cardForm.currentSpend} onChange={e=>setCardForm({...cardForm,currentSpend:e.target.value})}/></label><label>Statut<select value={cardForm.status} onChange={e=>setCardForm({...cardForm,status:e.target.value as CompanyCard['status']})}><option value="active">Active</option><option value="paused">Suspendue</option></select></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-  const submitTransaction = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSaving(true)
-    setError('')
-    setNotice('')
-    try {
-      await createTransaction({
-        merchant: transactionForm.merchant.trim(),
-        category: transactionForm.category.trim(),
-        amount: Number(transactionForm.amount),
-        transactionDate: transactionForm.transactionDate || undefined,
-        departmentId: transactionForm.departmentId ? Number(transactionForm.departmentId) : null,
-        employeeId: transactionForm.employeeId ? Number(transactionForm.employeeId) : null,
-        description: transactionForm.description.trim() || null,
-        status: transactionForm.status,
-      })
-      setTransactionForm({ merchant: '', category: '', amount: '', transactionDate: new Date().toISOString().slice(0, 10), departmentId: '', employeeId: '', description: '', status: 'needs_receipt' })
-      setShowForm(false)
-      setNotice('Transaction enregistrée dans PostgreSQL.')
-      await loadData(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la création de la transaction.')
-    } finally { setSaving(false) }
-  }
+    {showForm&&active==='Budgets'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>createBudget({departmentId:Number(budgetForm.departmentId),monthStart:budgetForm.monthStart,amount:Number(budgetForm.amount)}),'Budget enregistré.',()=>setBudgetForm({departmentId:'',monthStart:monthStart(),amount:''}))}><h2>Budget mensuel</h2><div className="form-grid"><label>Département *<select required value={budgetForm.departmentId} onChange={e=>setBudgetForm({...budgetForm,departmentId:e.target.value})}><option value="">Choisir…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Mois *<input required type="date" value={budgetForm.monthStart} onChange={e=>setBudgetForm({...budgetForm,monthStart:e.target.value.slice(0,7)+'-01'})}/></label><label>Montant (DA) *<input required type="number" min="0" step=".01" value={budgetForm.amount} onChange={e=>setBudgetForm({...budgetForm,amount:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-  const canCreate = active === 'Departments' || active === 'Team members' || active === 'Transactions'
-  const heading = active === 'Team members' ? 'Employés' : active
-  const subtitle: Record<string, string> = {
-    Overview: 'Vue d’ensemble calculée à partir des données enregistrées dans PostgreSQL.',
-    Transactions: 'Les opérations financières lues depuis la base de données.',
-    'Team members': 'Les employés enregistrés dans votre base de données.',
-    Departments: 'Les départements et leurs budgets enregistrés.',
-    Payroll: 'Synthèse réelle des périodes et des montants de paie.',
-    Cards: 'Les cartes d’entreprise seront affichées ici quand leur API sera activée.',
-    Budgets: 'La gestion détaillée des budgets sera connectée dans une prochaine étape.',
-    Dues: 'Les échéances enregistrées seront connectées dans une prochaine étape.',
-    Reports: 'Les rapports seront construits à partir des données de la base.',
-    Integrations: 'Configuration des intégrations.',
-    Settings: 'Paramètres de l’application.',
-  }
+    {showForm&&active==='Dues'&&<form className="panel data-form" onSubmit={e=>void submit(e,()=>createDue({title:dueForm.title,amount:Number(dueForm.amount),dueDate:dueForm.dueDate,employeeId:dueForm.employeeId?Number(dueForm.employeeId):null,status:dueForm.status,notes:dueForm.notes||null}),'Échéance enregistrée.',()=>setDueForm({title:'',amount:'',dueDate:today(),employeeId:'',status:'upcoming',notes:''}))}><h2>Nouvelle échéance</h2><div className="form-grid"><label>Titre *<input required value={dueForm.title} onChange={e=>setDueForm({...dueForm,title:e.target.value})}/></label><label>Montant DA *<input required type="number" min="0" step=".01" value={dueForm.amount} onChange={e=>setDueForm({...dueForm,amount:e.target.value})}/></label><label>Date d’échéance *<input required type="date" value={dueForm.dueDate} onChange={e=>setDueForm({...dueForm,dueDate:e.target.value})}/></label><label>Employé<select value={dueForm.employeeId} onChange={e=>setDueForm({...dueForm,employeeId:e.target.value})}><option value="">Aucun</option>{employees.map(e=><option key={e.id} value={e.id}>{fullName(e)}</option>)}</select></label><label>Statut<select value={dueForm.status} onChange={e=>setDueForm({...dueForm,status:e.target.value as Due['status']})}><option value="upcoming">À venir</option><option value="paid">Payée</option><option value="overdue">En retard</option></select></label><label>Notes<input value={dueForm.notes} onChange={e=>setDueForm({...dueForm,notes:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-  return (
-    <div className={`app-shell ${dark ? 'dark-mode' : ''}`}>
-      {mobileNav && <button className="mobile-scrim" aria-label="Fermer la navigation" onClick={() => setMobileNav(false)} />}
-      <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
-        <button className="brand" onClick={() => openSection('Overview')} aria-label="Accueil">
-          <span className="brand-mark"><span /></span><span className="brand-name">Money<span>.</span></span>
-        </button>
-        <div className="workspace-switch">
-          <div className="workspace-avatar">FP</div><div className="workspace-copy"><strong>Finance & Payroll</strong><small>PostgreSQL workspace</small></div><Database size={15} />
-        </div>
-        <div className="sidebar-section">
-          <span className="section-caption">VOTRE ESPACE</span>
-          <div className="money-summary"><div><strong>Finance</strong><small>Transactions, équipe,<br />départements et paie</small></div><span className="tiny-icon"><Wallet size={15} /></span></div>
-        </div>
-        <nav className="nav-list">
-          {navGroups.map(group => <div className="nav-group" key={group.title}>
-            <div className="nav-heading">{group.title}</div>
-            {group.items.map(item => {
-              const Icon = item.icon
-              return <button key={item.label} className={`nav-item ${active === item.label ? 'active' : ''}`} onClick={() => openSection(item.label)}>
-                <Icon size={17} strokeWidth={1.8} /><span>{item.label === 'Team members' ? 'Employés' : item.label === 'Departments' ? 'Départements' : item.label}</span>
-                {item.label === 'Team members' && <small className="nav-count">{employees.length}</small>}
-                {item.label === 'Departments' && <small className="nav-count">{departments.length}</small>}
-              </button>
-            })}
-          </div>)}
-        </nav>
-        <div className="close-progress"><div className="close-title"><span>État de connexion</span><span>{error ? 'Erreur' : loading ? '…' : 'OK'}</span></div><div className="progress-track"><span style={{ width: error ? '25%' : loading ? '50%' : '100%' }} /></div><small>{error ? 'Vérifiez le serveur API' : 'API locale · port 3001'}</small></div>
-        <div className="sidebar-bottom"><div className="profile-avatar">DB</div><div className="profile-copy"><strong>Base de données locale</strong><small>hani-model-1 · PostgreSQL</small></div><ShieldCheck size={16} /></div>
-      </aside>
+    {showForm&&active==='Payroll'&&<form className="panel data-form" onSubmit={e=>void submit(e,async()=>{const p=await createPayrollPeriod({periodStart:periodForm.periodStart,periodEnd:periodForm.periodEnd,notes:periodForm.notes||null});setSelectedPeriod(String(p.id));setPayrollItems([])},'Période de paie créée.',()=>setPeriodForm({periodStart:monthStart(),periodEnd:today(),notes:''}))}><h2>Créer une période de paie</h2><div className="form-grid"><label>Début *<input required type="date" value={periodForm.periodStart} onChange={e=>setPeriodForm({...periodForm,periodStart:e.target.value})}/></label><label>Fin *<input required type="date" min={periodForm.periodStart} value={periodForm.periodEnd} onChange={e=>setPeriodForm({...periodForm,periodEnd:e.target.value})}/></label><label className="form-wide">Notes<input value={periodForm.notes} onChange={e=>setPeriodForm({...periodForm,notes:e.target.value})}/></label></div><FormActions saving={saving} onCancel={()=>setShowForm(false)}/></form>}
 
-      <main className="main-area">
-        <header className="topbar">
-          <button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Ouvrir la navigation"><Menu size={20} /></button>
-          <div className="breadcrumbs"><span>Finance & Payroll</span><span className="crumb-chevron">›</span><span>Workspace</span><span className="crumb-chevron">›</span><strong>{heading}</strong></div>
-          <div className="top-actions">
-            <label className="search-box"><Search size={16} /><input placeholder="Rechercher..." value={query} onChange={event => setQuery(event.target.value)} /><kbd>Ctrl K</kbd></label>
-            <button className="icon-button" aria-label="Actualiser les données" onClick={() => void loadData(true)} disabled={refreshing}><RefreshCw size={16} className={refreshing ? 'spin-icon' : ''} /></button>
-            <button className="icon-button" aria-label="Changer le thème" onClick={() => setDark(!dark)}><Moon size={17} /></button>
-            <button className="icon-button notification-button" aria-label="Notifications" onClick={() => setActive('Transactions')}><Bell size={17} /><i /></button>
-            {canCreate && <button className="primary-button top-new" onClick={() => setShowForm(!showForm)}><Plus size={16} /> Ajouter</button>}
-          </div>
-        </header>
+    {loading?<div className="panel loading-state"><LoaderCircle size={22}/><strong>Chargement des données PostgreSQL…</strong></div>:<>
+     {active==='Overview'&&<><section className="overview-strip"><Metric label="Employés actifs" value={payroll?.activeEmployees??0} foot={`${employees.length} dossiers`}/><Metric label="Départements" value={departments.length} foot={money(departments.reduce((s,d)=>s+Number(d.monthlyBudget||0),0))+' de budgets mensuels'}/><Metric label="Transactions à traiter" value={receiptCount} foot={'Total listé : '+money(totalTransactions)}/></section><div className="dashboard-grid"><section className="panel activity-panel"><div className="panel-heading"><div><h2>Activité financière</h2><p>Montants issus des transactions réelles.</p></div><Activity size={18}/></div>{chartData.length?<div className="chart-area"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="liveSpendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7eae94" stopOpacity={.28}/><stop offset="95%" stopColor="#7eae94" stopOpacity={.015}/></linearGradient></defs><CartesianGrid strokeDasharray="3 4" vertical={false} stroke="var(--line)"/><XAxis dataKey="day"/><YAxis tickFormatter={v=>new Intl.NumberFormat('fr-DZ',{notation:'compact'}).format(v)}/><Tooltip formatter={v=>[money(Number(v)),'Montant']}/><Area type="monotone" dataKey="spend" stroke="#5b987a" fill="url(#liveSpendFill)"/></AreaChart></ResponsiveContainer></div>:<Empty text="Aucune transaction enregistrée."/>}<button className="text-link" onClick={()=>openSection('Transactions')}>Voir les transactions <ArrowUpRight size={14}/></button></section><section className="panel"><div className="panel-heading"><div><h2>Équipe</h2><p>Employés récents</p></div><Users size={18}/></div>{employees.slice(0,6).map(e=><div className="simple-list-row" key={e.id}><span className="simple-avatar">{e.firstName[0]}{e.lastName[0]}</span><span className="simple-list-copy"><strong>{fullName(e)}</strong><small>{e.position} · {e.departmentName||'Sans département'}</small></span></div>)}<button className="text-link" onClick={()=>openSection('Team members')}>Gérer l’équipe <ArrowUpRight size={14}/></button></section><section className="panel"><div className="panel-heading"><div><h2>Résumé de la paie</h2><p>Somme nette en attente</p></div><Wallet size={18}/></div><div className="payroll-summary"><span>Paie non réglée</span><strong>{money(payroll?.unpaidPayroll)}</strong></div><div className="simple-list-row"><CalendarDays size={16}/><span className="simple-list-copy"><strong>{payroll?.draftPayrollPeriods||0} période(s) brouillon</strong></span></div><button className="text-link" onClick={()=>openSection('Payroll')}>Ouvrir la paie <ArrowUpRight size={14}/></button></section><section className="panel"><div className="panel-heading"><div><h2>Transactions récentes</h2><p>PostgreSQL</p></div><CircleDollarSign size={18}/></div><TransactionTable items={filteredTransactions.slice(0,5)}/></section></div></>}
 
-        <section className="page-content">
-          <div className="page-heading">
-            <div><div className="eyebrow"><span className="status-dot" /> DONNÉES EN DIRECT</div><h1>{heading}</h1><p>{subtitle[active] || 'Gestion de votre espace Finance & Payroll.'}</p></div>
-            <div className="heading-actions">
-              <button className="secondary-button" onClick={() => void loadData(true)}><RefreshCw size={14} /> {refreshing ? 'Actualisation…' : 'Actualiser'}</button>
-              {canCreate && <button className="primary-button" onClick={() => setShowForm(!showForm)}><Plus size={16} /> {active === 'Departments' ? 'Nouveau département' : active === 'Transactions' ? 'Nouvelle transaction' : 'Nouvel employé'}</button>}
-            </div>
-          </div>
+     {active==='Team members'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Employés</h2><p>{filteredEmployees.length} résultat(s) · recherche, modification et suppression</p></div><button className="secondary-button" onClick={exportReport}><Download size={14}/> Excel / CSV</button></div><div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Matricule</th><th>Employé / contact</th><th>Poste / contrat</th><th>Département</th><th>Salaire</th><th>Statut</th><th>Actions</th></tr></thead><tbody>{filteredEmployees.map(e=><tr key={e.id}><td>{e.employeeCode}</td><td><strong>{fullName(e)}</strong><small>{e.email||'—'} · {e.phone||'—'}</small><small>{e.address||''}</small></td><td>{e.position}<small>{e.contractType||'permanent'} · {e.workSchedule||'full_time'}</small></td><td>{e.departmentName||'—'}</td><td>{money(e.baseSalary)}</td><td><span className={`status-pill ${e.employmentStatus==='active'?'complete':'pending'}`}>{e.employmentStatus==='active'?'Actif':e.employmentStatus==='on_leave'?'En congé':'Inactif'}</span></td><td><button className="icon-button" title="Modifier" onClick={()=>startEdit(e)}><Pencil size={14}/></button><button className="icon-button" title="Supprimer" onClick={()=>void removeEmployee(e)}><Trash2 size={14}/></button></td></tr>)}</tbody></table></div>{!filteredEmployees.length&&<Empty text={query?'Aucun employé trouvé.':'Aucun employé dans la base.'}/>}</section>}
 
-          {error && <div className="api-alert" role="alert"><strong>Erreur de connexion</strong><span>{error}</span><button className="secondary-button" onClick={() => void loadData(true)}>Réessayer</button></div>}
-          {notice && <div className="api-notice" role="status"><Check size={16} /> {notice}<button onClick={() => setNotice('')} aria-label="Fermer"><X size={14} /></button></div>}
+     {active==='Transactions'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Transactions</h2><p>{filteredTransactions.length} résultat(s)</p></div><button className="secondary-button" onClick={exportReport}><Download size={14}/> Exporter CSV</button></div><TransactionTable items={filteredTransactions}/></section>}
+     {active==='Departments'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Départements</h2><p>{filteredDepartments.length} département(s)</p></div></div><div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Département</th><th>Description</th><th>Employés</th><th>Budget mensuel</th></tr></thead><tbody>{filteredDepartments.map(d=><tr key={d.id}><td><strong>{d.name}</strong></td><td>{d.description||'—'}</td><td>{d.employeeCount??employees.filter(e=>e.departmentId===d.id).length}</td><td>{money(d.monthlyBudget)}</td></tr>)}</tbody></table></div></section>}
+     {active==='Cards'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Cartes d’entreprise</h2><p>{cards.length} carte(s) enregistrée(s)</p></div></div><DataTable headers={['Libellé','Titulaire','4 derniers chiffres','Plafond','Dépenses','Statut','Actions']} rows={cards.map(c=>[c.cardLabel,c.cardholderName,'•••• '+c.lastFour,money(c.spendingLimit),money(c.currentSpend),c.status==='active'?'Active':'Suspendue',<button className="icon-button" onClick={()=>void submit(new Event('submit') as unknown as FormEvent<HTMLFormElement>,()=>deleteCard(c.id),'Carte supprimée.')}><Trash2 size={14}/></button>])}/></section>}
+     {active==='Budgets'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Budgets mensuels</h2><p>{budgets.length} budget(s)</p></div></div><DataTable headers={['Mois','Département','Montant','Actions']} rows={budgets.map(b=>[dateLabel(b.monthStart),b.departmentName||'—',money(b.amount),<button className="icon-button" onClick={()=>{if(window.confirm('Supprimer ce budget ?'))void deleteBudget(b.id).then(()=>loadData(true)).catch(err=>setError(String(err)))}}><Trash2 size={14}/></button>])}/></section>}
+     {active==='Dues'&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Échéances</h2><p>{dues.length} échéance(s)</p></div></div><DataTable headers={['Titre','Date limite','Employé','Montant','Statut','Actions']} rows={dues.map(d=>[d.title,dateLabel(d.dueDate),d.employeeName||'—',money(d.amount),<select value={d.status} onChange={e=>void updateDueStatus(d.id,e.target.value as Due['status']).then(()=>loadData(true)).catch(err=>setError(String(err)))}><option value="upcoming">À venir</option><option value="paid">Payée</option><option value="overdue">En retard</option></select>,<button className="icon-button" onClick={()=>{if(window.confirm('Supprimer cette échéance ?'))void deleteDue(d.id).then(()=>loadData(true)).catch(err=>setError(String(err)))}}><Trash2 size={14}/></button>])}/></section>}
+     {active==='Payroll'&&<><section className="panel data-panel"><div className="panel-heading"><div><h2>Périodes de paie</h2><p>Choisissez une période, puis calculez les salaires nets.</p></div><select value={selectedPeriod} onChange={async e=>{setSelectedPeriod(e.target.value);setPayrollItems(e.target.value?await getPayrollItems(Number(e.target.value)).catch(()=>[]):[])}}><option value="">Choisir une période</option>{periods.map(p=><option key={p.id} value={p.id}>{dateLabel(p.periodStart)} – {dateLabel(p.periodEnd)} · {p.status}</option>)}</select></div>{selectedPeriod&&<div className="form-actions"><button className="primary-button" onClick={()=>void generatePayroll(Number(selectedPeriod)).then(items=>{setPayrollItems(items);setNotice('Paie calculée pour les employés actifs. Primes et retenues initialisées à zéro.')}).catch(err=>setError(String(err)))}><CircleDollarSign size={15}/> Calculer la paie des employés actifs</button><button className="secondary-button" onClick={exportReport}><Download size={14}/> Exporter CSV</button></div>}{periods.length===0&&<Empty text="Aucune période. Créez une période de paie."/>}</section>{payrollItems.length>0&&<section className="panel data-panel"><div className="panel-heading"><div><h2>Détail de paie</h2><p>Net à payer = salaire de base + primes − retenues. Les retenues sont saisies selon vos règles validées.</p></div></div><DataTable headers={['Matricule','Employé','Salaire de base','Primes','Retenues','Net à payer','Paiement']} rows={payrollItems.map(i=>[i.employeeCode,i.employeeName,money(i.baseSalary),money(i.bonuses),money(i.deductions),money(i.netSalary),<button className="secondary-button" onClick={()=>void setPayrollItemPayment(i.id,i.paymentStatus==='paid'?'pending':'paid').then(()=>getPayrollItems(Number(selectedPeriod)).then(setPayrollItems)).catch(err=>setError(String(err)))}>{i.paymentStatus==='paid'?'Marqué payé':'Marquer payé'}</button>])}/><div className="payroll-summary"><span>Total net</span><strong>{money(payrollItems.reduce((s,i)=>s+Number(i.netSalary),0))}</strong></div></section>}</>}
 
-          {showForm && active === 'Departments' && <form className="panel data-form" onSubmit={submitDepartment}>
-            <h2>Ajouter un département</h2>
-            <div className="form-grid"><label>Nom du département *<input required maxLength={120} value={departmentForm.name} onChange={e => setDepartmentForm({ ...departmentForm, name: e.target.value })} placeholder="Ex. Informatique" /></label><label>Budget mensuel (DA)<input type="number" min="0" step="0.01" value={departmentForm.monthlyBudget} onChange={e => setDepartmentForm({ ...departmentForm, monthlyBudget: e.target.value })} placeholder="0" /></label><label className="form-wide">Description<input value={departmentForm.description} onChange={e => setDepartmentForm({ ...departmentForm, description: e.target.value })} placeholder="Description (facultatif)" /></label></div>
-            <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setShowForm(false)}>Annuler</button><button disabled={saving} className="primary-button" type="submit">{saving ? 'Enregistrement…' : 'Enregistrer dans PostgreSQL'}</button></div>
-          </form>}
-
-          {showForm && active === 'Transactions' && <form className="panel data-form" onSubmit={submitTransaction}>
-            <h2>Ajouter une transaction</h2>
-            <div className="form-grid">
-              <label>Marchand / bénéficiaire *<input required maxLength={180} value={transactionForm.merchant} onChange={e => setTransactionForm({ ...transactionForm, merchant: e.target.value })} placeholder="Ex. Fournisseur" /></label>
-              <label>Catégorie *<input required maxLength={100} value={transactionForm.category} onChange={e => setTransactionForm({ ...transactionForm, category: e.target.value })} placeholder="Ex. Fournitures" /></label>
-              <label>Montant (DA) *<input required type="number" min="0" step="0.01" value={transactionForm.amount} onChange={e => setTransactionForm({ ...transactionForm, amount: e.target.value })} /></label>
-              <label>Date *<input required type="date" value={transactionForm.transactionDate} onChange={e => setTransactionForm({ ...transactionForm, transactionDate: e.target.value })} /></label>
-              <label>Département<select value={transactionForm.departmentId} onChange={e => setTransactionForm({ ...transactionForm, departmentId: e.target.value })}><option value="">Aucun</option>{departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
-              <label>Employé<select value={transactionForm.employeeId} onChange={e => setTransactionForm({ ...transactionForm, employeeId: e.target.value })}><option value="">Aucun</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{fullName(employee)}</option>)}</select></label>
-              <label>Statut<select value={transactionForm.status} onChange={e => setTransactionForm({ ...transactionForm, status: e.target.value as Transaction['status'] })}><option value="needs_receipt">Justificatif requis</option><option value="pending">En attente</option><option value="complete">Terminé</option></select></label>
-              <label>Description<input value={transactionForm.description} onChange={e => setTransactionForm({ ...transactionForm, description: e.target.value })} placeholder="Facultatif" /></label>
-            </div>
-            <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setShowForm(false)}>Annuler</button><button disabled={saving} className="primary-button" type="submit">{saving ? 'Enregistrement…' : 'Enregistrer dans PostgreSQL'}</button></div>
-          </form>}
-
-          {showForm && active === 'Team members' && <form className="panel data-form" onSubmit={submitEmployee}>
-            <h2>Ajouter un employé</h2>
-            <div className="form-grid">
-              <label>Matricule *<input required maxLength={40} value={employeeForm.employeeCode} onChange={e => setEmployeeForm({ ...employeeForm, employeeCode: e.target.value })} /></label>
-              <label>Poste *<input required value={employeeForm.position} onChange={e => setEmployeeForm({ ...employeeForm, position: e.target.value })} placeholder="Ex. Comptable" /></label>
-              <label>Prénom *<input required value={employeeForm.firstName} onChange={e => setEmployeeForm({ ...employeeForm, firstName: e.target.value })} /></label>
-              <label>Nom *<input required value={employeeForm.lastName} onChange={e => setEmployeeForm({ ...employeeForm, lastName: e.target.value })} /></label>
-              <label>E-mail<input type="email" value={employeeForm.email} onChange={e => setEmployeeForm({ ...employeeForm, email: e.target.value })} /></label>
-              <label>Téléphone<input value={employeeForm.phone} onChange={e => setEmployeeForm({ ...employeeForm, phone: e.target.value })} /></label>
-              <label>Département<select value={employeeForm.departmentId} onChange={e => setEmployeeForm({ ...employeeForm, departmentId: e.target.value })}><option value="">Aucun</option>{departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
-              <label>Date d’embauche<input type="date" value={employeeForm.hireDate} onChange={e => setEmployeeForm({ ...employeeForm, hireDate: e.target.value })} /></label>
-              <label>Salaire de base (DA)<input type="number" min="0" step="0.01" value={employeeForm.baseSalary} onChange={e => setEmployeeForm({ ...employeeForm, baseSalary: e.target.value })} /></label>
-              <label>Statut<select value={employeeForm.employmentStatus} onChange={e => setEmployeeForm({ ...employeeForm, employmentStatus: e.target.value as Employee['employmentStatus'] })}><option value="active">Actif</option><option value="on_leave">En congé</option><option value="inactive">Inactif</option></select></label>
-            </div>
-            <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setShowForm(false)}>Annuler</button><button disabled={saving} className="primary-button" type="submit">{saving ? 'Enregistrement…' : 'Enregistrer dans PostgreSQL'}</button></div>
-          </form>}
-
-          {loading ? <div className="panel loading-state"><LoaderCircle size={22} className="spin-icon" /><strong>Chargement des données depuis PostgreSQL…</strong></div> : <>
-            {active === 'Overview' && <>
-              <section className="overview-strip">
-                <div className="overview-cell"><div className="overview-label"><span>Employés actifs</span><span className="overview-icon"><Users size={15} /></span></div><div className="overview-value">{payroll?.activeEmployees ?? 0}</div><div className="overview-foot">{employees.length} employé(s) enregistré(s)</div></div>
-                <div className="overview-cell"><div className="overview-label"><span>Départements</span><span className="overview-icon"><BriefcaseBusiness size={15} /></span></div><div className="overview-value">{payroll?.departmentCount ?? departments.length}</div><div className="overview-foot">{money(departments.reduce((sum, item) => sum + Number(item.monthlyBudget || 0), 0))} de budgets mensuels</div></div>
-                <div className="overview-cell"><div className="overview-label"><span>Transactions à traiter</span><span className="overview-icon warning-icon"><Activity size={15} /></span></div><div className="overview-value">{receiptCount}</div><div className="overview-foot">Montant cumulé listé : {money(totalTransactions)}</div></div>
-              </section>
-              <div className="dashboard-grid">
-                <section className="panel activity-panel">
-                  <div className="panel-heading"><div><h2>Activité financière</h2><p>Montants regroupés par date à partir des transactions réelles.</p></div><span className="count-pill">{transactions.length}</span></div>
-                  {chartData.length ? <div className="chart-area"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 8, right: 5, left: -18, bottom: 0 }}><defs><linearGradient id="liveSpendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7eae94" stopOpacity={0.28} /><stop offset="95%" stopColor="#7eae94" stopOpacity={0.015} /></linearGradient></defs><CartesianGrid strokeDasharray="3 4" vertical={false} stroke="var(--line)" /><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 10 }} tickFormatter={v => new Intl.NumberFormat('fr-DZ', { notation: 'compact' }).format(v)} /><Tooltip contentStyle={{ borderRadius: 12, border: '1px solid var(--line)', background: 'var(--panel)', fontSize: 12 }} formatter={(value) => [money(Number(value)), 'Montant']} /><Area type="monotone" dataKey="spend" stroke="#5b987a" strokeWidth={2.5} fill="url(#liveSpendFill)" /></AreaChart></ResponsiveContainer></div> : <div className="empty-state">Aucune transaction enregistrée. Le graphique apparaîtra après l’ajout de données.</div>}
-                  <button className="text-link" onClick={() => openSection('Transactions')}>Consulter les transactions <ArrowUpRight size={14} /></button>
-                </section>
-                <section className="panel">
-                  <div className="panel-heading"><div><h2>Équipe</h2><p>Derniers employés enregistrés</p></div><Users size={18} /></div>
-                  {employees.slice(0, 5).map(employee => <div className="simple-list-row" key={employee.id}><span className="simple-avatar">{employee.firstName.slice(0, 1)}{employee.lastName.slice(0, 1)}</span><span className="simple-list-copy"><strong>{fullName(employee)}</strong><small>{employee.position} · {employee.departmentName || 'Sans département'}</small></span><span className={`status-pill ${employee.employmentStatus === 'active' ? 'complete' : 'pending'}`}>{employee.employmentStatus === 'active' ? 'Actif' : employee.employmentStatus === 'on_leave' ? 'Congé' : 'Inactif'}</span></div>)}
-                  {!employees.length && <div className="empty-state">Aucun employé. Ajoutez le premier depuis « Employés ».</div>}
-                  <button className="text-link" onClick={() => openSection('Team members')}>Gérer les employés <ArrowUpRight size={14} /></button>
-                </section>
-                <section className="panel transactions-panel">
-                  <div className="panel-heading"><div><h2>Transactions récentes</h2><p>Dernières opérations depuis PostgreSQL.</p></div><CircleDollarSign size={18} /></div>
-                  <TransactionTable items={filteredTransactions.slice(0, 5)} />
-                  <button className="text-link" onClick={() => openSection('Transactions')}>Voir toutes les transactions <ArrowUpRight size={14} /></button>
-                </section>
-                <section className="panel">
-                  <div className="panel-heading"><div><h2>Résumé de la paie</h2><p>Données issues des périodes de paie.</p></div><Wallet size={18} /></div>
-                  <div className="payroll-summary"><span>Paie non réglée</span><strong>{money(payroll?.unpaidPayroll)}</strong></div>
-                  <div className="simple-list-row"><span className="overview-icon"><CalendarDays size={15} /></span><span className="simple-list-copy"><strong>{payroll?.draftPayrollPeriods ?? 0} période(s) en brouillon</strong><small>Nombre calculé depuis payroll_periods</small></span></div>
-                  <button className="text-link" onClick={() => openSection('Payroll')}>Ouvrir la paie <ArrowUpRight size={14} /></button>
-                </section>
-              </div>
-            </>}
-
-            {active === 'Transactions' && <section className="panel data-panel"><div className="panel-heading"><div><h2>Transactions</h2><p>{filteredTransactions.length} résultat(s) · lecture directe de la base de données</p></div><ArrowLeftRight size={18} /></div><TransactionTable items={filteredTransactions} /></section>}
-
-            {active === 'Team members' && <section className="panel data-panel"><div className="panel-heading"><div><h2>Employés</h2><p>{filteredEmployees.length} employé(s) · enregistrement et lecture PostgreSQL</p></div><Users size={18} /></div>
-              <div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Matricule</th><th>Nom complet</th><th>Poste</th><th>Département</th><th>Salaire de base</th><th>Statut</th></tr></thead><tbody>{filteredEmployees.map(employee => <tr key={employee.id}><td>{employee.employeeCode}</td><td><strong>{fullName(employee)}</strong><small>{employee.email || employee.phone || '—'}</small></td><td>{employee.position}</td><td>{employee.departmentName || '—'}</td><td>{money(employee.baseSalary)}</td><td><span className={`status-pill ${employee.employmentStatus === 'active' ? 'complete' : 'pending'}`}>{employee.employmentStatus === 'active' ? 'Actif' : employee.employmentStatus === 'on_leave' ? 'En congé' : 'Inactif'}</span></td></tr>)}</tbody></table></div>
-              {!filteredEmployees.length && <div className="empty-state">{query ? 'Aucun employé ne correspond à la recherche.' : 'Aucun employé dans PostgreSQL. Cliquez sur « Nouvel employé » pour commencer.'}</div>}
-            </section>}
-
-            {active === 'Departments' && <section className="panel data-panel"><div className="panel-heading"><div><h2>Départements</h2><p>{filteredDepartments.length} département(s) · budgets et effectifs depuis PostgreSQL</p></div><BriefcaseBusiness size={18} /></div>
-              <div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Département</th><th>Description</th><th>Employés</th><th>Budget mensuel</th></tr></thead><tbody>{filteredDepartments.map(department => <tr key={department.id}><td><strong>{department.name}</strong></td><td>{department.description || '—'}</td><td>{department.employeeCount ?? employees.filter(e => e.departmentId === department.id).length}</td><td>{money(department.monthlyBudget)}</td></tr>)}</tbody></table></div>
-              {!filteredDepartments.length && <div className="empty-state">{query ? 'Aucun département ne correspond à la recherche.' : 'Aucun département dans PostgreSQL. Cliquez sur « Nouveau département » pour commencer.'}</div>}
-            </section>}
-
-            {active === 'Payroll' && <div className="dashboard-grid">
-              <section className="panel"><div className="panel-heading"><div><h2>État de la paie</h2><p>Statistiques calculées par le serveur.</p></div><Wallet size={18} /></div><div className="payroll-summary"><span>Montant non payé</span><strong>{money(payroll?.unpaidPayroll)}</strong></div><div className="simple-list-row"><span className="overview-icon"><Users size={15} /></span><span className="simple-list-copy"><strong>{payroll?.activeEmployees ?? 0} employés actifs</strong><small>Depuis la table employees</small></span></div><div className="simple-list-row"><span className="overview-icon"><CalendarDays size={15} /></span><span className="simple-list-copy"><strong>{payroll?.draftPayrollPeriods ?? 0} période(s) en brouillon</strong><small>Depuis la table payroll_periods</small></span></div></section>
-              <section className="panel"><div className="panel-heading"><div><h2>Employés</h2><p>Salaires de base enregistrés</p></div><CircleDollarSign size={18} /></div><div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Employé</th><th>Salaire</th></tr></thead><tbody>{employees.map(employee => <tr key={employee.id}><td>{fullName(employee)}</td><td>{money(employee.baseSalary)}</td></tr>)}</tbody></table></div></section>
-            </div>}
-
-            {!['Overview', 'Transactions', 'Team members', 'Departments', 'Payroll'].includes(active) && <section className="panel coming-soon"><span className="overview-icon"><Database size={18} /></span><h2>{active}</h2><p>{subtitle[active] || 'Cette section sera connectée à l’API dans une prochaine étape.'}</p><p className="coming-note">Aucune donnée de démonstration n’est affichée ici. Les cartes, budgets et échéances seront activés une fois leurs routes API disponibles.</p><button className="secondary-button" onClick={() => openSection('Overview')}>Retour au Dashboard</button></section>}
-          </>}
-
-          <footer className="page-footer"><span>Finance & Payroll · données locales</span><span><ShieldCheck size={13} /> {error ? 'Connexion à vérifier' : loading ? 'Connexion en cours…' : 'Connecté à l’API PostgreSQL'}</span><span>API : localhost:3001</span></footer>
-        </section>
-      </main>
-    </div>
-  )
+     {active==='Reports'&&<section className="panel report-tools"><h2>Rapports</h2><p>Les exports sont générés à partir des données PostgreSQL courantes.</p><div className="form-actions"><button className="primary-button" onClick={()=>{const old=active;void old;exportCsv('rapport-employes.csv',['Matricule','Nom complet','Poste','Département','Email','Téléphone','Salaire DA','Statut'],employees.map(e=>[e.employeeCode,fullName(e),e.position,e.departmentName||'',e.email||'',e.phone||'',e.baseSalary,e.employmentStatus]))}><Download size={15}/> Exporter employés CSV</button><button className="secondary-button" onClick={()=>exportCsv('rapport-transactions.csv',['Marchand','Catégorie','Date','Montant DA','Statut'],transactions.map(t=>[t.merchant,t.category,t.transactionDate,t.amount,t.status]))}><Download size={15}/> Transactions CSV</button><button className="secondary-button" onClick={()=>exportCsv('rapport-paie.csv',['Matricule','Employé','Base','Primes','Retenues','Net'],payrollItems.map(i=>[i.employeeCode,i.employeeName,i.baseSalary,i.bonuses,i.deductions,i.netSalary]))}><Download size={15}/> Paie CSV</button><button className="secondary-button" onClick={()=>window.print()}><Printer size={15}/> Imprimer / PDF</button></div><p className="coming-note">Les fichiers CSV sont compatibles avec Excel. L’impression permet de choisir « Enregistrer au format PDF ».</p></section>}
+     {active==='Integrations'&&<section className="panel coming-soon"><Zap size={22}/><h2>Intégrations</h2><p>API locale connectée à PostgreSQL sur localhost:3001.</p></section>}
+     {active==='Settings'&&<section className="panel coming-soon"><Settings size={22}/><h2>Paramètres</h2><p>Base active : hani-model-1 · PostgreSQL. Ne placez jamais le mot de passe de la base dans le frontend ou dans Git.</p></section>}
+    </>}
+    <footer className="page-footer"><span>Finance & Payroll · données locales</span><span><ShieldCheck size={13}/>{error?'Connexion à vérifier':loading?'Connexion…':'Connecté à PostgreSQL'}</span><span>API : localhost:3001</span></footer>
+   </section>
+  </main>
+ </div>
 }
 
-function TransactionTable({ items }: { items: Transaction[] }) {
-  if (!items.length) return <div className="empty-state">Aucune transaction dans PostgreSQL pour le moment.</div>
-  return <div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Marchand</th><th>Catégorie</th><th>Date</th><th>Montant</th><th>Statut</th></tr></thead><tbody>{items.map(item => <tr key={item.id}><td><strong>{item.merchant}</strong><small>{item.description || item.employeeName || '—'}</small></td><td>{item.category}</td><td>{dateLabel(item.transactionDate)}</td><td>{money(item.amount)}</td><td><span className={`status-pill ${item.status === 'complete' ? 'complete' : 'pending'}`}>{item.status === 'complete' ? <><Check size={11} /> Terminé</> : item.status === 'needs_receipt' ? 'Justificatif requis' : 'En attente'}</span></td></tr>)}</tbody></table></div>
-}
-
+function FormActions({saving,onCancel}:{saving:boolean;onCancel:()=>void}){return <div className="form-actions"><button type="button" className="secondary-button" onClick={onCancel}>Annuler</button><button disabled={saving} className="primary-button">{saving?'Enregistrement…':'Enregistrer dans PostgreSQL'}</button></div>}
+function Metric({label,value,foot}:{label:string;value:string|number;foot:string}){return <div className="overview-cell"><div className="overview-label"><span>{label}</span><span className="overview-icon"><CircleDollarSign size={15}/></span></div><div className="overview-value">{value}</div><div className="overview-foot">{foot}</div></div>}
+function Empty({text}:{text:string}){return <div className="empty-state">{text}</div>}
+function DataTable({headers,rows}:{headers:string[];rows:React.ReactNode[][]}){if(!rows.length)return <Empty text="Aucune donnée enregistrée dans PostgreSQL."/>;return <div className="data-table-scroll"><table className="real-data-table"><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>}
+function TransactionTable({items}:{items:Transaction[]}){if(!items.length)return <Empty text="Aucune transaction enregistrée."/>;return <div className="data-table-scroll"><table className="real-data-table"><thead><tr><th>Marchand</th><th>Catégorie</th><th>Date</th><th>Montant</th><th>Statut</th></tr></thead><tbody>{items.map(t=><tr key={t.id}><td><strong>{t.merchant}</strong><small>{t.description||t.employeeName||'—'}</small></td><td>{t.category}</td><td>{dateLabel(t.transactionDate)}</td><td>{money(t.amount)}</td><td>{t.status==='complete'?'Terminé':t.status==='needs_receipt'?'Justificatif requis':'En attente'}</td></tr>)}</tbody></table></div>}
 export default App
