@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowLeftRight, ArrowUpRight, Bell, BriefcaseBusiness,
-  CalendarDays, Check, ChevronDown, CircleDollarSign, CreditCard, Database,
+  CalendarDays, Check, CircleDollarSign, CreditCard, Database,
   FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
   Settings, ShieldCheck, SlidersHorizontal, Users, Wallet, X, Zap,
 } from 'lucide-react'
