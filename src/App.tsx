@@ -164,9 +164,28 @@ export default App
 function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
  const [lampOn,setLampOn]=useState(false)
  const lampAccent='#ffd66e'
+ const [lampPosition,setLampPosition]=useState({x:0,y:0})
+ const [lampDrag,setLampDrag]=useState<{startX:number;startY:number;offsetX:number;offsetY:number;left:number;top:number;right:number;bottom:number}|null>(null)
  const [cordStartY,setCordStartY]=useState<number|null>(null)
  const [cordDistance,setCordDistance]=useState(0)
  const toggleLamp=()=>setLampOn(value=>!value)
+ const startLampDrag=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  if((event.target as Element).closest('.lamp-pull-cord'))return
+  event.preventDefault()
+  const rect=event.currentTarget.getBoundingClientRect()
+  event.currentTarget.setPointerCapture(event.pointerId)
+  setLampDrag({startX:event.clientX,startY:event.clientY,offsetX:lampPosition.x,offsetY:lampPosition.y,left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom})
+ }
+ const moveLampDrag=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  if(!lampDrag)return
+  const dx=event.clientX-lampDrag.startX
+  const dy=event.clientY-lampDrag.startY
+  setLampPosition({
+   x:Math.max(-lampDrag.left,Math.min(window.innerWidth-lampDrag.right,lampDrag.offsetX+dx)),
+   y:Math.max(-lampDrag.top,Math.min(window.innerHeight-lampDrag.bottom,lampDrag.offsetY+dy)),
+  })
+ }
+ const finishLampDrag=()=>setLampDrag(null)
  const startCordPull=(event:ReactPointerEvent<SVGGElement>)=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setCordStartY(event.clientY);setCordDistance(0)}
  const moveCordPull=(event:ReactPointerEvent<SVGGElement>)=>{if(cordStartY!==null)setCordDistance(Math.max(0,Math.min(46,event.clientY-cordStartY)))}
  const finishCordPull=()=>{if(cordStartY!==null&&cordDistance>16)toggleLamp();setCordStartY(null);setCordDistance(0)}
@@ -174,7 +193,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
   <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
-     <div className="lamp-art">
+     <div className="lamp-art" style={{transform:`translate3d(${lampPosition.x}px,${lampPosition.y}px,0)`}} onPointerDown={startLampDrag} onPointerMove={moveLampDrag} onPointerUp={finishLampDrag} onPointerCancel={finishLampDrag} aria-label="Déplacer la lampe librement dans la page">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
       <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?lampAccent:"#626a68"}/><stop offset=".55" stopColor={lampOn?lampAccent:"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor={lampAccent} stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor={lampAccent} stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
