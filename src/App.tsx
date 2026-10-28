@@ -176,6 +176,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
   <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
+    <div className="lamp-color-controls" aria-label="اختيار لون الإضاءة">{([{id:"amber",label:"ذهبي",color:"#ffab3d"},{id:"cyan",label:"سماوي",color:"#00eaff"},{id:"rose",label:"وردي",color:"#ff5a9d"},{id:"mint",label:"أخضر",color:"#4dffad"},{id:"moonlight",label:"أبيض بارد",color:"#d8e5ff"}] as const).map(option=><button key={option.id} type="button" className={"lamp-color-dot "+(lampColor===option.id?"active":"")} style={{"--dot-color":option.color} as CSSProperties} onClick={()=>setLampColor(option.id)} aria-label={"لون المصباح: "+option.label} title={option.label}/>)}</div>
      <div className="lamp-art">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
