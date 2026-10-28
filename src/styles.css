@@ -230,3 +230,24 @@
  .lamp-scene{grid-column:1;grid-row:auto}
  .lamp-login-card{grid-column:1;grid-row:auto;align-self:start;justify-self:stretch;margin-block-start:0}
 }
+
+
+/* Interactive lamp login: palette controls, atmospheric dust, and color-reactive glow */
+.lamp-screen{--lamp-accent:#ffd66e}
+.lamp-ambient{background:radial-gradient(ellipse at 29% 35%,color-mix(in srgb,var(--lamp-accent) 24%,transparent),transparent 44%)}
+.lamp-on .lamp-ambient{opacity:1}
+.lamp-beam{background:linear-gradient(180deg,color-mix(in srgb,var(--lamp-accent) 23%,transparent),color-mix(in srgb,var(--lamp-accent) 7%,transparent) 50%,transparent)}
+.lamp-floor-glow{background:var(--lamp-accent)}
+.lamp-brand-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;z-index:4}
+.lamp-color-controls{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid #ffffff18;border-radius:999px;background:#ffffff08;backdrop-filter:blur(12px)}
+.lamp-color-dot{width:13px;height:13px;flex:none;padding:0;border:2px solid transparent;border-radius:50%;background:var(--dot-color);box-shadow:0 0 0 1px #ffffff26;transition:transform .2s,box-shadow .2s}
+.lamp-color-dot:hover{transform:scale(1.18)}
+.lamp-color-dot.active{box-shadow:0 0 0 2px #101514,0 0 0 3.5px var(--dot-color),0 0 15px color-mix(in srgb,var(--dot-color) 55%,transparent)}
+.lamp-color-dot:focus-visible{outline:2px solid var(--dot-color);outline-offset:4px}
+.lamp-dust{position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.3;background-image:radial-gradient(circle at 12% 21%,#fff 0 1px,transparent 1.6px),radial-gradient(circle at 31% 72%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 62% 18%,#fff 0 1px,transparent 1.6px),radial-gradient(circle at 81% 62%,#fff 0 1px,transparent 1.7px),radial-gradient(circle at 44% 49%,#fff 0 1px,transparent 1.6px);background-size:290px 260px;animation:lamp-dust-drift 22s linear infinite}
+.lamp-on .lamp-login-card.revealed{border-color:color-mix(in srgb,var(--lamp-accent) 42%,transparent);box-shadow:0 25px 80px #0006,0 0 58px color-mix(in srgb,var(--lamp-accent) 12%,transparent),inset 0 1px #ffffff15}
+.lamp-on .lamp-login-submit{border-color:color-mix(in srgb,var(--lamp-accent) 58%,transparent);background:linear-gradient(110deg,color-mix(in srgb,var(--lamp-accent) 72%,#7c6b47),color-mix(in srgb,var(--lamp-accent) 92%,#fff) 48%,color-mix(in srgb,var(--lamp-accent) 72%,#8a7446))}
+@keyframes lamp-dust-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-35px,-25px,0)}}
+@media(max-width:850px){.lamp-brand-row{align-items:flex-start}.lamp-color-controls{gap:7px;padding:7px}.lamp-color-dot{width:11px;height:11px}.lamp-dust{opacity:.2}}
+@media(max-width:420px){.lamp-brand-row{gap:8px}.lamp-brand{font-size:14px}.lamp-color-controls{gap:6px;padding:6px}.lamp-color-dot{width:10px;height:10px}}
+@media(prefers-reduced-motion:reduce){.lamp-dust{animation:none}}
