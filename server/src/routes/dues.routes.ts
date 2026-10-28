@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { pool } from '../config/database.js';
+import { asyncHandler } from '../utils/async-handler.js';
+export const duesRouter = Router();
+const schema=z.object({title:z.string().trim().min(1).max(180),amount:z.number().finite().min(0),dueDate:z.string().date(),employeeId:z.number().int().positive().optional().nullable(),status:z.enum(['upcoming','paid','overdue']).default('upcoming'),notes:z.string().trim().max(5000).optional().nullable()});
+duesRouter.get('/',asyncHandler(async(_req,res)=>{const r=await pool.query('SELECT x.id,x.title,x.amount,x.due_date AS "dueDate",x.employee_id AS "employeeId",CONCAT_WS(\' \',e.first_name,e.last_name) AS "employeeName",x.status,x.notes FROM dues x LEFT JOIN employees e ON e.id=x.employee_id ORDER BY x.due_date');res.json({data:r.rows});}));
+duesRouter.post('/',asyncHandler(async(req,res)=>{const x=schema.parse(req.body);const r=await pool.query('INSERT INTO dues(title,amount,due_date,employee_id,status,notes) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,title,amount,due_date AS "dueDate",employee_id AS "employeeId",status,notes',[x.title,x.amount,x.dueDate,x.employeeId??null,x.status,x.notes??null]);res.status(201).json({data:r.rows[0]});}));
+duesRouter.patch('/:id/status',asyncHandler(async(req,res)=>{const id=z.coerce.number().int().positive().parse(req.params.id);const status=z.enum(['upcoming','paid','overdue']).parse(req.body.status);const r=await pool.query('UPDATE dues SET status=$1 WHERE id=$2 RETURNING id,status',[status,id]);if(!r.rowCount){res.status(404).json({error:'Due not found'});return;}res.json({data:r.rows[0]});}));
+duesRouter.delete('/:id',asyncHandler(async(req,res)=>{const id=z.coerce.number().int().positive().parse(req.params.id);const r=await pool.query('DELETE FROM dues WHERE id=$1 RETURNING id',[id]);if(!r.rowCount){res.status(404).json({error:'Due not found'});return;}res.status(204).end();}));
