@@ -1,4 +1,4 @@
-import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowLeftRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, Check, CircleDollarSign,
   CreditCard, Database, FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
@@ -163,22 +163,25 @@ export default App
 
 function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
  const [lampOn,setLampOn]=useState(false)
+ const [lampColor,setLampColor]=useState<'amber'|'cyan'|'rose'|'mint'|'moonlight'>('amber')
+ const lampPalette={amber:'#ffd66e',cyan:'#00eaff',rose:'#ff5a9d',mint:'#4dffad',moonlight:'#d8e5ff'}
+ const lampAccent=lampPalette[lampColor]
  const [cordStartY,setCordStartY]=useState<number|null>(null)
  const [cordDistance,setCordDistance]=useState(0)
  const toggleLamp=()=>setLampOn(value=>!value)
  const startCordPull=(event:ReactPointerEvent<SVGGElement>)=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setCordStartY(event.clientY);setCordDistance(0)}
  const moveCordPull=(event:ReactPointerEvent<SVGGElement>)=>{if(cordStartY!==null)setCordDistance(Math.max(0,Math.min(46,event.clientY-cordStartY)))}
  const finishCordPull=()=>{if(cordStartY!==null&&cordDistance>16)toggleLamp();setCordStartY(null);setCordDistance(0)}
- return <main className={"lamp-screen "+(lampOn?"lamp-on":"lamp-off")}>
-  <div className="lamp-ambient" aria-hidden="true"/>
+ return <main className={"lamp-screen lamp-color-"+lampColor+" "+(lampOn?"lamp-on":"lamp-off")} style={{"--lamp-accent":lampAccent} as CSSProperties}>
+  <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
-    <div className="lamp-brand"><span className="lamp-brand-mark"><Wallet size={20}/></span><span>Finance <b>&amp; Payroll</b></span></div>
+    <div className="lamp-brand-row"><div className="lamp-brand"><span className="lamp-brand-mark"><Wallet size={20}/></span><span>Finance <b>&amp; Payroll</b></span></div><div className="lamp-color-controls" aria-label="اختيار لون الإضاءة">{([{id:"amber",label:"ذهبي",color:"#ffab3d"},{id:"cyan",label:"سماوي",color:"#00eaff"},{id:"rose",label:"وردي",color:"#ff5a9d"},{id:"mint",label:"أخضر",color:"#4dffad"},{id:"moonlight",label:"أبيض بارد",color:"#d8e5ff"}] as const).map(option=><button key={option.id} type="button" className={"lamp-color-dot "+(lampColor===option.id?"active":"")} style={{"--dot-color":option.color} as CSSProperties} onClick={()=>setLampColor(option.id)} aria-label={"لون المصباح: "+option.label} title={option.label}/>)}</div></div>
     <div className="lamp-headline"><span className="lamp-eyebrow"><span className="lamp-status-dot"/> ESPACE ADMINISTRATEUR SÉCURISÉ</span><h1>Allumez votre espace.<br/><span>Maîtrisez vos finances.</span></h1><p>Tirez sur le cordon du luminaire pour allumer la lumière et révéler votre espace de connexion.</p></div>
     <div className="lamp-art">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
-      <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?"#fff6d9":"#626a68"}/><stop offset=".55" stopColor={lampOn?"#e8d9ad":"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor="#ffd66e" stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor="#ffd66e" stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
+      <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?"#fff6d9":"#626a68"}/><stop offset=".55" stopColor={lampOn?"#e8d9ad":"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor={lampAccent} stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor={lampAccent} stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
       <path d="M150 0 V92" stroke="url(#lampCord)" strokeWidth="4" strokeLinecap="round"/>
       <ellipse cx="150" cy="143" rx="110" ry="76" fill="url(#lampBulb)" opacity={lampOn?1:0} className="lamp-bulb-glow"/>
       <path d="M90 87 C91 48 209 48 210 87 L229 126 Q150 151 71 126 Z" fill="url(#lampShade)" stroke={lampOn?"#fff1c3":"#747c77"} strokeOpacity=".8" strokeWidth="1.5"/>
