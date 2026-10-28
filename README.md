@@ -67,10 +67,9 @@ Available initial endpoints:
 
 ## 3. Start the frontend
 
-In a second PowerShell terminal, return to the project root:
+In a second PowerShell terminal opened at the project root, run:
 
 ```powershell
-Set-Location ..
 npm install
 npm run dev
 ```
