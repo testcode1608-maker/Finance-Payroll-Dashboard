@@ -1,4 +1,4 @@
-# Finance & Payroll Dashboard
+﻿# Finance & Payroll Dashboard
 
 A responsive React + TypeScript + Vite dashboard inspired by the reference Reel: soft ivory canvas, sage-green navigation, colorful finance cards, compact transaction lists, and clean typography.
 
