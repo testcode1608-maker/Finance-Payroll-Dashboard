@@ -180,9 +180,14 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
   if(!lampDrag)return
   const dx=event.clientX-lampDrag.startX
   const dy=event.clientY-lampDrag.startY
+  // Clamp the next position using the lamp's current offset and viewport bounds.
+  const minX=lampDrag.offsetX-lampDrag.left
+  const maxX=lampDrag.offsetX+window.innerWidth-lampDrag.right
+  const minY=lampDrag.offsetY-lampDrag.top
+  const maxY=lampDrag.offsetY+window.innerHeight-lampDrag.bottom
   setLampPosition({
-   x:Math.max(-lampDrag.left,Math.min(window.innerWidth-lampDrag.right,lampDrag.offsetX+dx)),
-   y:Math.max(-lampDrag.top,Math.min(window.innerHeight-lampDrag.bottom,lampDrag.offsetY+dy)),
+   x:Math.max(minX,Math.min(maxX,lampDrag.offsetX+dx)),
+   y:Math.max(minY,Math.min(maxY,lampDrag.offsetY+dy)),
   })
  }
  const finishLampDrag=()=>setLampDrag(null)
