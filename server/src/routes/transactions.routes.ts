@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { pool } from '../config/database.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
@@ -26,4 +27,30 @@ transactionsRouter.get('/', asyncHandler(async (request, response) => {
     values,
   );
   response.json({ data: result.rows });
+}));
+
+const createTransactionSchema = z.object({
+  merchant: z.string().trim().min(1).max(180),
+  category: z.string().trim().min(1).max(100),
+  amount: z.number().finite().min(0),
+  transactionDate: z.string().date().optional(),
+  departmentId: z.number().int().positive().optional().nullable(),
+  employeeId: z.number().int().positive().optional().nullable(),
+  description: z.string().trim().max(5000).optional().nullable(),
+  status: z.enum(['pending', 'complete', 'needs_receipt']).default('needs_receipt'),
+});
+
+transactionsRouter.post('/', asyncHandler(async (request, response) => {
+  const input = createTransactionSchema.parse(request.body);
+  const result = await pool.query(
+    `INSERT INTO transactions
+       (merchant, category, amount, transaction_date, department_id, employee_id, description, status)
+     VALUES ($1, $2, $3, COALESCE($4::date, CURRENT_DATE), $5, $6, $7, $8)
+     RETURNING id, merchant, category, amount, transaction_date AS "transactionDate",
+       department_id AS "departmentId", employee_id AS "employeeId",
+       description, status, created_at AS "createdAt"`,
+    [input.merchant, input.category, input.amount, input.transactionDate ?? null,
+      input.departmentId ?? null, input.employeeId ?? null, input.description ?? null, input.status],
+  );
+  response.status(201).json({ data: result.rows[0] });
 }));
