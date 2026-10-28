@@ -13,8 +13,6 @@ const envSchema = z.object({
   DB_SSL: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
   ADMIN_USERNAME: z.string().min(1).default('admin'),
   ADMIN_PASSWORD: z.string().min(8).default('hanihani'),
-  ADMIN_USERNAME: z.string().min(1).default('admin'),
-  ADMIN_PASSWORD: z.string().min(8).default('hanihani'),
 });
 
 export const env = envSchema.parse(process.env);
