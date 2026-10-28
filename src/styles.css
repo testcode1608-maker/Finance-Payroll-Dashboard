@@ -185,3 +185,24 @@
  .lamp-art{right:-49px;top:122px;width:175px;height:235px;opacity:.67}
  .lamp-headline p{max-width:245px}
 }
+
+
+/* Compact lamp scene: smaller headline and lamp illustration */
+.lamp-headline{margin-top:34px;max-width:430px}
+.lamp-headline h1{font-size:clamp(29px,3vw,40px);line-height:1.13;letter-spacing:-1.5px;margin:13px 0 11px}
+.lamp-headline p{max-width:365px;font-size:11px;line-height:1.75}
+.lamp-art{top:155px;right:4px;width:220px;height:286px}
+.lamp-beam{top:98px;left:22px;width:176px;height:190px}
+.lamp-floor-glow{width:160px;height:24px}
+@media(max-width:850px){
+ .lamp-headline{margin-top:25px;max-width:100%}
+ .lamp-headline h1{font-size:clamp(27px,6vw,34px);letter-spacing:-1.2px}
+ .lamp-headline p{max-width:310px;font-size:10px}
+ .lamp-art{top:100px;right:-16px;width:170px;height:225px}
+ .lamp-beam{top:75px;left:17px;width:140px;height:150px}
+}
+@media(max-width:420px){
+ .lamp-headline h1{font-size:27px}
+ .lamp-art{top:105px;right:-32px;width:145px;height:195px;opacity:.65}
+ .lamp-headline p{max-width:220px}
+}
