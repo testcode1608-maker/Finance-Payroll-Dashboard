@@ -193,7 +193,7 @@ function AdminLogin({username,setUsername,password,setPassword,showPassword,setS
   <div className="lamp-ambient" aria-hidden="true"/><div className="lamp-dust" aria-hidden="true"/>
   <div className="lamp-layout">
    <section className="lamp-scene" aria-label="Interactive lamp">
-     <div className="lamp-art" style={{transform:`translate3d(${lampPosition.x}px,${lampPosition.y}px,0)`}} onPointerDown={startLampDrag} onPointerMove={moveLampDrag} onPointerUp={finishLampDrag} onPointerCancel={finishLampDrag} aria-label="Déplacer la lampe librement dans la page">
+     <div className="lamp-art" style={{transform:`translate3d(calc(-50% + ${lampPosition.x}px),${lampPosition.y}px,0)`}} onPointerDown={startLampDrag} onPointerMove={moveLampDrag} onPointerUp={finishLampDrag} onPointerCancel={finishLampDrag} aria-label="Déplacer la lampe librement dans la page">
      <div className="lamp-beam" aria-hidden="true"/>
      <svg className="lamp-svg" viewBox="0 0 300 390" role="img" aria-label={lampOn?"Lampe allumée":"Lampe éteinte"}>
       <defs><linearGradient id="lampShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={lampOn?lampAccent:"#626a68"}/><stop offset=".55" stopColor={lampOn?lampAccent:"#343c3b"}/><stop offset="1" stopColor={lampOn?"#9f9273":"#171e20"}/></linearGradient><radialGradient id="lampBulb"><stop offset="0" stopColor="#fffce5" stopOpacity={lampOn?1:0}/><stop offset=".45" stopColor={lampAccent} stopOpacity={lampOn?0.95:0}/><stop offset="1" stopColor={lampAccent} stopOpacity="0"/></radialGradient><linearGradient id="lampCord" x1="0" x2="1"><stop offset="0" stopColor="#7b817c"/><stop offset=".5" stopColor="#d1c8ac"/><stop offset="1" stopColor="#4a514e"/></linearGradient></defs>
