@@ -74,3 +74,5 @@
   .real-data-table{font-size:10px}
   .data-table-scroll{overflow:visible!important}
 }
+
+@media print{.report-tools{display:none!important}.print-report{border:0!important}.print-report .panel-heading{margin-bottom:12px}}
