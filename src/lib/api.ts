@@ -86,3 +86,11 @@ export async function getTransactions() {
 export async function getPayrollSummary() {
   return (await request<ApiResponse<PayrollSummary>>('/api/payroll/summary')).data
 }
+
+export async function createTransaction(input: {
+  merchant: string; category: string; amount: number; transactionDate?: string;
+  departmentId?: number | null; employeeId?: number | null; description?: string | null;
+  status: 'pending' | 'complete' | 'needs_receipt'
+}) {
+  return (await request<ApiResponse<Transaction>>('/api/transactions', { method: 'POST', body: JSON.stringify(input) })).data
+}
