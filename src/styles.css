@@ -302,3 +302,43 @@
 .lamp-login-card .lamp-secure-note svg{flex:none;color:#9bc9a3}
 .lamp-login-card .lamp-card-bottom{display:flex!important;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding-top:13px;border-top:1px solid rgba(255,255,255,.07);color:#778078;font-size:8px;letter-spacing:.9px}
 @media(max-width:760px){.lamp-login-card .lamp-card-heading{margin-top:20px!important}}
+
+
+/* Professional finance portal login card */
+.lamp-layout{grid-template-columns:minmax(280px,1fr) minmax(320px,400px)!important;gap:clamp(30px,5vw,76px)!important}
+.lamp-login-card{width:100%!important;max-width:400px!important;padding:30px 30px 23px!important;border-radius:24px!important;background:linear-gradient(145deg,rgba(20,27,25,.94),rgba(11,16,16,.92))!important;border:1px solid rgba(232,202,128,.24)!important;backdrop-filter:blur(24px)!important;box-shadow:0 28px 80px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.07)!important}
+.lamp-login-card.revealed{box-shadow:0 28px 85px rgba(0,0,0,.45),0 0 45px rgba(255,214,110,.08),inset 0 1px rgba(255,255,255,.08)!important}
+.lamp-card-top{margin-bottom:0!important}
+.lamp-lock-icon{width:44px!important;height:44px!important;border-radius:13px!important;background:rgba(255,214,110,.09)!important;border:1px solid rgba(255,214,110,.24)!important;color:#ffdf91!important}
+.lamp-card-badge{font-size:9px!important;letter-spacing:1.35px!important;color:#b4beb5!important}
+.lamp-card-heading{margin-top:27px!important;text-align:left!important}
+.lamp-card-heading h2{margin:0 0 9px!important;font:750 30px/1.2 Manrope,sans-serif!important;letter-spacing:-.9px!important;color:#fbf8ef!important}
+.lamp-card-heading p{display:block!important;margin:0!important;max-width:300px;color:#a7b0a8!important;font-size:12px!important;line-height:1.75!important}
+.lamp-login-form{margin-top:25px!important;gap:17px!important}
+.lamp-login-form>label{display:flex!important;flex-direction:column!important;gap:8px!important;margin:0!important;color:#d0d6ce!important;font-size:11px!important;font-weight:600!important;letter-spacing:.15px!important}
+.lamp-input-wrap{height:50px!important;min-width:0;padding:0 13px!important;gap:11px!important;margin-top:0!important;border:1px solid rgba(255,255,255,.13)!important;border-radius:12px!important;background:rgba(255,255,255,.045)!important}
+.lamp-input-wrap:focus-within{border-color:rgba(255,214,110,.68)!important;background:rgba(255,255,255,.07)!important;box-shadow:0 0 0 3px rgba(255,214,110,.08)!important}
+.lamp-input-wrap>svg{color:#aeb8ad!important}
+.lamp-input-wrap input{padding:0!important;font-size:12px!important;color:#fffdf7!important}
+.lamp-input-wrap input::placeholder{color:#7e8980!important}
+.lamp-reveal{flex:none!important;color:#9da99e!important;cursor:pointer}
+.lamp-login-submit{min-height:50px!important;margin-top:3px!important;padding:0 17px!important;justify-content:center!important;gap:10px!important;border:1px solid rgba(255,225,157,.48)!important;border-radius:12px!important;background:linear-gradient(115deg,#d3b166,#f5dda0 52%,#c6a15a)!important;color:#242318!important;font-size:12px!important;font-weight:800!important;box-shadow:0 9px 24px rgba(219,185,105,.13)!important;cursor:pointer}
+.lamp-login-submit:hover:not(:disabled){transform:translateY(-1px)!important;filter:brightness(1.06);box-shadow:0 12px 28px rgba(219,185,105,.2)!important}
+.lamp-login-submit:focus-visible,.lamp-reveal:focus-visible{outline:2px solid #ffdf91!important;outline-offset:3px}
+.lamp-secure-note{margin-top:21px!important;padding-top:16px!important;border-top:1px solid rgba(255,255,255,.1)!important;color:#a0aba1!important;font-size:10px!important;line-height:1.7!important}
+.lamp-secure-note svg{color:#9ed0a9!important}
+.lamp-card-bottom{margin-top:19px!important;padding-top:14px!important;border-top:1px solid rgba(255,255,255,.08)!important;color:#879187!important;font-size:8px!important;letter-spacing:1px!important}
+@media(max-width:760px){
+ .lamp-layout{width:min(100% - 28px,440px)!important;grid-template-columns:minmax(0,1fr)!important;gap:15px!important}
+ .lamp-scene{min-height:285px!important}
+ .lamp-login-card{grid-column:1;grid-row:2;width:100%!important;max-width:400px!important;padding:27px 24px 21px!important}
+ .lamp-card-heading{margin-top:22px!important}
+ .lamp-login-form{margin-top:22px!important}
+}
+@media(max-width:420px){
+ .lamp-layout{width:calc(100% - 24px)!important}
+ .lamp-scene{min-height:245px!important}
+ .lamp-login-card{padding:23px 19px 19px!important;border-radius:20px!important}
+ .lamp-card-heading h2{font-size:27px!important}
+ .lamp-card-bottom{font-size:7px!important;letter-spacing:.65px!important}
+}
