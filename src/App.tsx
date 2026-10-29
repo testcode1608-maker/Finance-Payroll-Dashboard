@@ -1,4 +1,4 @@
-import { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, ArrowLeftRight, ArrowUpRight, BriefcaseBusiness, CalendarDays, Check, CircleDollarSign,
   CreditCard, Database, FileText, Home, LoaderCircle, Menu, Moon, Plus, RefreshCw, Search,
@@ -27,7 +27,69 @@ const monthStart=()=>today().slice(0,7)+'-01'
 const initialEmployee=()=>({employeeCode:'',firstName:'',lastName:'',email:'',phone:'',departmentId:'',position:'',hireDate:'',baseSalary:'',employmentStatus:'active' as Employee['employmentStatus'],address:'',contractType:'permanent' as Employee['contractType'],workSchedule:'full_time' as Employee['workSchedule'],notes:''})
 const initialTransaction=()=>({merchant:'',category:'',amount:'',transactionDate:today(),departmentId:'',employeeId:'',description:'',status:'needs_receipt' as Transaction['status']})
 
+type SoundCue='click'|'success'|'error'|'lamp'
+
+/** Short synthesized cues: no external audio files, network requests, or autoplay on page load. */
+function useCinematicSounds(){
+ const contextRef=useRef<AudioContext|null>(null)
+ const readyRef=useRef(false)
+ const playCue=useCallback((cue:SoundCue)=>{
+  try{
+   const context=contextRef.current
+   if(!context||context.state==='closed')return
+   if(context.state==='suspended')void context.resume().catch(()=>{})
+   const now=context.currentTime
+   const tone=(frequency:number,duration:number,type:OscillatorType='sine',volume=.022,delay=0)=>{
+    const oscillator=context.createOscillator()
+    const gain=context.createGain()
+    oscillator.type=type
+    oscillator.frequency.setValueAtTime(frequency,now+delay)
+    gain.gain.setValueAtTime(.0001,now+delay)
+    gain.gain.exponentialRampToValueAtTime(volume,now+delay+.012)
+    gain.gain.exponentialRampToValueAtTime(.0001,now+delay+duration)
+    oscillator.connect(gain);gain.connect(context.destination)
+    oscillator.start(now+delay);oscillator.stop(now+delay+duration+.025)
+   }
+   if(cue==='click')tone(720,.045,'sine',.014)
+   else if(cue==='success'){tone(523.25,.13,'sine',.025);tone(659.25,.15,'sine',.022,.075);tone(783.99,.2,'sine',.024,.15)}
+   else if(cue==='error'){tone(220,.13,'triangle',.022);tone(174.61,.18,'triangle',.02,.12)}
+   else {tone(1046.5,.045,'triangle',.018);tone(659.25,.1,'sine',.016,.035);tone(440,.19,'sine',.022,.08)}
+  }catch{/* Sound must never interrupt app interactions. */}
+ },[])
+ const activate=useCallback(()=>{
+  try{
+   if(!contextRef.current){
+    const AudioContextConstructor=window.AudioContext
+    if(!AudioContextConstructor)return
+    contextRef.current=new AudioContextConstructor()
+   }
+   if(contextRef.current.state==='suspended')void contextRef.current.resume().catch(()=>{})
+   readyRef.current=true
+  }catch{/* Unsupported or blocked audio is safely ignored. */}
+ },[])
+ useEffect(()=>{
+  const onFirstInteraction=()=>activate()
+  const onClick=(event:MouseEvent)=>{
+   if(!readyRef.current)activate()
+   const target=event.target
+   if(!(target instanceof Element)||target.closest('.lamp-pull-cord'))return
+   if(target.closest('button,a,[role="button"],input,select,summary,.lamp-art'))playCue('click')
+  }
+  document.addEventListener('pointerdown',onFirstInteraction,true)
+  document.addEventListener('keydown',onFirstInteraction,true)
+  document.addEventListener('click',onClick,true)
+  return ()=>{
+   document.removeEventListener('pointerdown',onFirstInteraction,true)
+   document.removeEventListener('keydown',onFirstInteraction,true)
+   document.removeEventListener('click',onClick,true)
+  }
+ },[activate,playCue])
+ useEffect(()=>()=>{try{if(contextRef.current&&contextRef.current.state!=='closed')void contextRef.current.close().catch(()=>{})}catch{}},[])
+ return playCue
+}
+
 function App(){
+ const playSound=useCinematicSounds()
  const [authToken,setAuthToken]=useState(()=>localStorage.getItem('finance_admin_token')||'')
  const [loginUsername,setLoginUsername]=useState('admin')
  const [loginPassword,setLoginPassword]=useState('')
@@ -76,7 +138,7 @@ function App(){
   finally{setLoading(false);setRefreshing(false)}
  },[selectedPeriod])
  useEffect(()=>{if(authToken)void loadData()},[authToken,loadData])
- const handleLogin=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLoginBusy(true);setLoginError('');try{const result=await loginAdmin(loginUsername.trim(),loginPassword);localStorage.setItem('finance_admin_token',result.token);setAuthToken(result.token);setLoginPassword('')}catch(err){setLoginError(err instanceof Error?err.message:'Connexion refusée. Vérifiez vos identifiants.')}finally{setLoginBusy(false)}}
+ const handleLogin=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setLoginBusy(true);setLoginError('');try{const result=await loginAdmin(loginUsername.trim(),loginPassword);localStorage.setItem('finance_admin_token',result.token);setAuthToken(result.token);setLoginPassword('');playSound('success')}catch(err){setLoginError(err instanceof Error?err.message:'Connexion refusée. Vérifiez vos identifiants.');playSound('error')}finally{setLoginBusy(false)}}
  const handleLogout=async()=>{try{await logoutAdmin()}catch{}localStorage.removeItem('finance_admin_token');setAuthToken('');setLoginPassword('');setLoginError('')}
 
  const filteredEmployees=useMemo(()=>employees.filter(e=>`${fullName(e)} ${e.employeeCode} ${e.position} ${e.departmentName||''} ${e.email||''} ${e.phone||''}`.toLowerCase().includes(query.toLowerCase())),[employees,query])
@@ -86,13 +148,13 @@ function App(){
  const chartData=useMemo(()=>{const m=new Map<string,number>();transactions.forEach(t=>{const d=new Date(t.transactionDate);if(!Number.isNaN(d.getTime())){const k=new Intl.DateTimeFormat('fr-DZ',{day:'2-digit',month:'short'}).format(d);m.set(k,(m.get(k)||0)+Number(t.amount||0))}});return Array.from(m,([day,spend])=>({day,spend})).slice(0,7).reverse()},[transactions])
  const openSection=(label:string)=>{setActive(label);setShowForm(false);setNotice('');setMobileNav(false);setQuery('')}
  const startEdit=(e:Employee)=>{setEmployeeForm({employeeCode:e.employeeCode,firstName:e.firstName,lastName:e.lastName,email:e.email||'',phone:e.phone||'',departmentId:e.departmentId?String(e.departmentId):'',position:e.position,hireDate:e.hireDate?.slice(0,10)||'',baseSalary:String(e.baseSalary),employmentStatus:e.employmentStatus,address:e.address||'',contractType:e.contractType||'permanent',workSchedule:e.workSchedule||'full_time',notes:e.notes||''});setEditingEmployeeId(e.id);setShowForm(true);window.scrollTo({top:0,behavior:'smooth'})}
- const submit=async(event:FormEvent<HTMLFormElement>,job:()=>Promise<unknown>,message:string,reset?:()=>void)=>{event.preventDefault();setSaving(true);setError('');setNotice('');try{await job();reset?.();setShowForm(false);setEditingEmployeeId(null);setNotice(message);await loadData(true)}catch(err){setError(err instanceof Error?err.message:'Échec de l’enregistrement.')}finally{setSaving(false)}}
+ const submit=async(event:FormEvent<HTMLFormElement>,job:()=>Promise<unknown>,message:string,reset?:()=>void)=>{event.preventDefault();setSaving(true);setError('');setNotice('');try{await job();playSound('success');reset?.();setShowForm(false);setEditingEmployeeId(null);setNotice(message);await loadData(true)}catch(err){setError(err instanceof Error?err.message:'Échec de l’enregistrement.');playSound('error')}finally{setSaving(false)}}
  const employeePayload=()=>({employeeCode:employeeForm.employeeCode.trim(),firstName:employeeForm.firstName.trim(),lastName:employeeForm.lastName.trim(),email:employeeForm.email.trim()||null,phone:employeeForm.phone.trim()||null,departmentId:employeeForm.departmentId?Number(employeeForm.departmentId):null,position:employeeForm.position.trim(),hireDate:employeeForm.hireDate||null,baseSalary:Number(employeeForm.baseSalary||0),employmentStatus:employeeForm.employmentStatus,address:employeeForm.address.trim()||null,contractType:employeeForm.contractType,workSchedule:employeeForm.workSchedule,notes:employeeForm.notes.trim()||null})
  const removeEmployee=async(e:Employee)=>{if(!window.confirm(`Supprimer ${fullName(e)} ? Cette action est définitive.`))return;try{await deleteEmployee(e.id);setNotice('Employé supprimé.');await loadData(true)}catch(err){setError(err instanceof Error?err.message:'Impossible de supprimer cet employé.')}}
 
  const exportCsv=(name:string,headers:string[],rows:(string|number)[][])=>{const csv=[headers,...rows].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);setNotice('Export CSV compatible Excel généré.')}
  const exportReport=()=>{const rows=active==='Transactions'?transactions.map(t=>[t.merchant,t.category,t.transactionDate,t.amount,t.status]):active==='Payroll'?payrollItems.map(i=>[i.employeeCode,i.employeeName,i.baseSalary,i.bonuses,i.deductions,i.netSalary,i.paymentStatus]):employees.map(e=>[e.employeeCode,fullName(e),e.position,e.departmentName||'',e.email||'',e.phone||'',e.baseSalary,e.employmentStatus]);const headers=active==='Transactions'?['Marchand','Catégorie','Date','Montant DA','Statut']:active==='Payroll'?['Matricule','Employé','Salaire de base','Primes','Retenues','Net à payer','Paiement']:['Matricule','Nom complet','Poste','Département','Email','Téléphone','Salaire de base DA','Statut'];exportCsv(`rapport-${active.toLowerCase().replace(/ /g,'-')}.csv`,headers,rows)}
- if(!authToken)return <AdminLogin username={loginUsername} setUsername={setLoginUsername} password={loginPassword} setPassword={setLoginPassword} showPassword={showLoginPassword} setShowPassword={setShowLoginPassword} error={loginError} busy={loginBusy} onSubmit={handleLogin}/>
+ if(!authToken)return <AdminLogin username={loginUsername} setUsername={setLoginUsername} password={loginPassword} setPassword={setLoginPassword} showPassword={showLoginPassword} setShowPassword={setShowLoginPassword} error={loginError} busy={loginBusy} onSubmit={handleLogin} playSound={playSound}/>
  const canCreate=['Departments','Team members','Transactions','Cards','Budgets','Dues','Payroll'].includes(active)
  const heading=active==='Team members'?'Employés':active
  const subtitles:Record<string,string>={Overview:'Vue d’ensemble calculée depuis PostgreSQL.',Transactions:'Opérations financières enregistrées dans la base.', 'Team members':'Dossiers employés complets : coordonnées, contrat, poste et salaire.',Departments:'Départements et budgets mensuels.',Payroll:'Périodes, calcul du brut, primes, retenues et net à payer.',Cards:'Cartes d’entreprise : titulaire, plafond et consommation.',Budgets:'Budgets mensuels par département.',Dues:'Échéances, montants et statuts de paiement.',Reports:'Exporter les données en CSV compatible Excel ou imprimer en PDF.',Integrations:'Configuration des intégrations.',Settings:'Paramètres de l’application.'}
@@ -161,14 +223,14 @@ function TransactionTable({items}:{items:Transaction[]}){if(!items.length)return
 export default App
 
 
-function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void}){
+function AdminLogin({username,setUsername,password,setPassword,showPassword,setShowPassword,error,busy,onSubmit,playSound}:{username:string;setUsername:(v:string)=>void;password:string;setPassword:(v:string)=>void;showPassword:boolean;setShowPassword:(v:boolean)=>void;error:string;busy:boolean;onSubmit:(event:FormEvent<HTMLFormElement>)=>void;playSound:(cue:SoundCue)=>void}){
  const [lampOn,setLampOn]=useState(false)
  const lampAccent='#ffd66e'
  const [lampPosition,setLampPosition]=useState({x:0,y:0})
  const [lampDrag,setLampDrag]=useState<{startX:number;startY:number;offsetX:number;offsetY:number;left:number;top:number;right:number;bottom:number}|null>(null)
  const [cordStartY,setCordStartY]=useState<number|null>(null)
  const [cordDistance,setCordDistance]=useState(0)
- const toggleLamp=()=>setLampOn(value=>!value)
+ const toggleLamp=()=>{setLampOn(value=>!value);playSound('lamp')}
  const startLampDrag=(event:ReactPointerEvent<HTMLDivElement>)=>{
   if((event.target as Element).closest('.lamp-pull-cord'))return
   event.preventDefault()
